@@ -1,0 +1,10 @@
+requests
+pydantic-settings
+selenium
+Pillow==11.2.1
+fpdf2==2.8.3
+tqdm
+pytest
+pytest-mock
+structlog
+pyinstaller 
