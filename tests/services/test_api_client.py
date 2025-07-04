@@ -25,21 +25,20 @@ def mock_session():
 def test_get_book_success(mock_session):
     """Test successful book data retrieval and parsing."""
     client = LitresAPIClient(session=mock_session)
-    book = client.get_book("109410952")
+    book = client.get_o3_book("https://www.litres.ru/book/author/title-109410952/")
 
     assert isinstance(book, Book)
     assert book.file_id == "109410952"
     assert book.meta.title == "Burda №08/2024"
-    assert len(book.pages) == 2
-    assert book.pages[0].width == 1900
+    assert len(book.parts) == 2
+    assert book.parts[0].width == 1900
 
 def test_get_book_bad_response(mock_session):
     """Test handling of a bad or unexpected API response."""
     mock_session.get.return_value.text = "This is not a valid response"
     client = LitresAPIClient(session=mock_session)
-    
     with pytest.raises(BookProcessingError, match="Could not find file_id in response"):
-        client.get_book("123")
+        client.get_o3_book("https://www.litres.ru/book/author/title-123/")
 
 def test_get_book_http_error(mock_session):
     """Test that an HTTP error raises a BookProcessingError."""
@@ -47,4 +46,4 @@ def test_get_book_http_error(mock_session):
     client = LitresAPIClient(session=mock_session)
 
     with pytest.raises(BookProcessingError):
-        client.get_book("123") 
+        client.get_o3_book("123") 

@@ -1,7 +1,5 @@
-import re
 from dataclasses import dataclass
-from typing import List, Optional
-import json
+from typing import List, Optional, Any
 
 @dataclass
 class Author:
@@ -37,21 +35,21 @@ class BookMeta:
     version: float
     uuid: str
     
-    def primary_author(self) -> Optional[Author]:
-        """Возвращает первого автора"""
-        return self.authors[0] if self.authors else None
-    
-    def __str__(self):
-        authors_str = ", ".join(str(author) for author in self.authors)
-        return f'"{self.title}" by {authors_str} (v{self.version})'
-    
 @dataclass
 class Book:
-    """Главный класс для представления книги"""
-    file_id: str
     meta: BookMeta
-    pages: List[Page]
+    parts: List[Any]
     
     @property
-    def total_pages(self) -> int:
-        return len(self.pages) 
+    def total_parts(self) -> int:
+        return len(self.parts)
+
+@dataclass
+class PdfBook(Book):
+    file_id: str
+    parts: List[Page]
+
+
+@dataclass
+class TextBook(Book):
+    base_url: str

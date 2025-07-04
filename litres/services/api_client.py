@@ -1,13 +1,16 @@
 import re
 import json
-from typing import List, Optional
 import requests
 
-from ..models import Author, Book, BookMeta, Page
+from litres.models.book import PdfBook
+from litres.utils import extract_base_url, extract_file_id
+
+from ..models import Author, Book, BookMeta, Page, TextBook
 from ..exceptions import BookProcessingError
 from ..config import logger
 
-INFO_URL_TEMPLATE = "https://www.litres.ru/pages/get_pdf_js/?file={file_id}"
+o3_URL_TEMPLATE = "https://www.litres.ru/pages/get_pdf_js/?file={file_id}"
+o4_URL_TEMPLATE = "https://www.litres.ru{url}json/toc.js"
 
 class LitresAPIClient:
     """Handles communication with the LitRes API."""
@@ -15,17 +18,67 @@ class LitresAPIClient:
     def __init__(self, session: requests.Session):
         self._session = session
 
-    def get_book(self, file_id: str) -> Book:
-        """Fetch and parse book metadata from LitRes."""
-        logger.info(f"Retrieving book metadata for file_id: {file_id}")
-        url = INFO_URL_TEMPLATE.format(file_id=file_id)
+    def get_o4_book(self, url: str) -> TextBook:
+        """Fetch and parse text book metadata from LitRes."""
+        base_url = extract_base_url(url)
+
+        if not base_url:
+            raise BookProcessingError(f"Failed to extract base_url from URL: {url}")
         
         try:
+            toc_url = o4_URL_TEMPLATE.format(url=base_url)
+            response = self._session.get(toc_url)
+            response.raise_for_status()
+
+            return self.parse_litres_o3_response(response.text, base_url)
+        except requests.exceptions.RequestException as e:
+            raise BookProcessingError(f"Text book metadata retrieval error: {str(e)}")
+
+    def parse_litres_o3_response(self, text: str, base_url: str):
+        try:
+            # The response is not valid JSON, it's a JS object. It needs to be cleaned up.
+            text_data = re.sub(r'([{,]\s*)(\w+)(\s*:)', r'\1"\2"\3', text)
+            text_data = re.sub(r',\s*([}\]])', r'\1', text_data)
+
+            data = json.loads(text_data)
+            meta_data = data.get("Meta", {})
+            
+            # Extract authors using original capitalized keys
+            authors_data = meta_data.get("Authors", [])
+            authors = [
+                Author(
+                    first=author.get("First", ""),
+                    middle=author.get("Middle"),
+                    last=author.get("Last")
+                ) for author in authors_data if isinstance(author, dict)
+            ]
+
+            return TextBook(
+                base_url=base_url,
+                meta=BookMeta(
+                    title=meta_data.get("Title", "Unknown"),
+                    authors=authors,
+                    version=float(meta_data.get("version") or 0.0),
+                    uuid=meta_data.get("UUID", "")
+                ),
+                parts=data.get("Parts", [])
+            )
+        except json.JSONDecodeError as e:
+            raise BookProcessingError(f"Text book metadata retrieval error", e)
+        
+    def get_o3_book(self, url: str) -> Book:
+        """Fetch and parse book metadata from LitRes."""
+        file_id = extract_file_id(url)
+        
+        if not file_id:
+            raise BookProcessingError(f"Failed to extract file_id from URL: {url}")
+        
+        try:
+            url = o3_URL_TEMPLATE.format(file_id=file_id)
             response = self._session.get(url)
             response.raise_for_status()
-            book = self._extract_book_data(response.text)
-            logger.info("Book metadata successfully retrieved")
-            return book
+
+            return self._extract_book_data(response.text)
         except Exception as e:
             logger.error(f"Metadata retrieval error: {str(e)}", exc_info=True)
             raise BookProcessingError(f"Metadata retrieval error: {str(e)}")
@@ -79,10 +132,10 @@ class LitresAPIClient:
                         extension=ext
                     ))
             
-            return Book(
+            return PdfBook(
                 file_id=file_id,
                 meta=book_meta,
-                pages=pages
+                parts=pages
             )
         except (KeyError, TypeError, json.JSONDecodeError) as e:
             logger.error(f"Failed to parse book data: {e}", exc_info=True, extra={"raw_response": response_text})

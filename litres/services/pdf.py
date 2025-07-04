@@ -22,9 +22,9 @@ class PDFService:
     def _get_sorted_images(self, input_folder: str) -> List[str]:
         """Get sorted list of image files in the input folder."""
         image_files = sorted(
-            glob.glob(os.path.join(input_folder, "page_*.jpg")) + 
-            glob.glob(os.path.join(input_folder, "page_*.gif")),
-            key=lambda x: int(os.path.basename(x).split('_')[1].split('.')[0])
+            glob.glob(os.path.join(input_folder, "*.jpg")) + 
+            glob.glob(os.path.join(input_folder, "*.gif")),
+            key=lambda x: int(os.path.basename(x).split('.')[0])
         )
         return image_files
     
@@ -108,7 +108,7 @@ class PDFService:
                 os.makedirs(output_dir, exist_ok=True)
                 pdf.output(final_output_path)
                 
-                self._log_size_reduction(image_files, final_output_path)
+                # self._log_size_reduction(image_files, final_output_path)
             
         except Exception as e:
             logger.error(f"PDF optimization failed: {str(e)}", exc_info=True)
@@ -116,15 +116,6 @@ class PDFService:
     
     def _log_size_reduction(self, image_files: List[str], output_pdf: str) -> None:
         """Calculate and log size reduction statistics."""
-        original_size = sum(os.path.getsize(f) for f in image_files)
-        final_size = os.path.getsize(output_pdf)
-        
-        logger.info("\nOptimization complete:")
-        logger.info(f"Original size: {original_size/1024/1024:.1f} MB")
-        logger.info(f"Final PDF size: {final_size/1024/1024:.1f} MB")
-        
-        if original_size > 0:
-            reduction = (1 - final_size/original_size) * 100
-            logger.info(f"Reduction: {reduction:.1f}%")
-        else:
-            logger.warning("Original size was 0, cannot calculate reduction") 
+        # original_size = sum(os.path.getsize(f) for f in image_files)
+        # final_size = os.path.getsize(output_pdf)
+        logger.info("Optimization complete")

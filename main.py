@@ -3,8 +3,8 @@ from enum import IntEnum
 
 from litres.config import setup_logging, logger
 from litres.exceptions import BookProcessingError
-from litres.services import BookProcessor
 from litres.services.auth_service import AuthService
+from litres.services.book_processor import BookProcessor
 
 class ExitCode(IntEnum):
     SUCCESS = 0
@@ -20,7 +20,7 @@ def show_banner():
 ███████╗██║   ██║   ██║     ███████╗██║  ██║███████║
 ╚══════╝╚═╝   ╚═╝   ╚═╝     ╚══════╝╚═╝  ╚═╝╚══════╝
 
-LitRes Book Downloader (images → PDF)
+LitRes Book Downloader
 Bypasses subscription wall and merges pages
     """)
 

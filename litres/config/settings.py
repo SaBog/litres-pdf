@@ -9,8 +9,8 @@ class AppSettings(BaseSettings):
     quality: int = 65
     dpi: int = 300
     domain: str = 'https://www.litres.ru/'
-    image_dir: str = 'images'
-    pdf_dir: str = 'pdfs'
+    source_dir: str = 'books-source'
+    books_dir: str = 'books'
 
     # Configuration sources
     model_config = SettingsConfigDict(

@@ -1,5 +1,21 @@
 import re
+import time
+from functools import wraps
 from urllib.parse import parse_qs, urlparse
+from litres.config import settings, logger
+
+# Глобальные скомпилированные регулярки для парсинга JS-like JSON
+key_re = re.compile(r'([{,]\s*)(\w+)(\s*:)')
+comma_re = re.compile(r',\s*([}\]])')
+
+def extract_base_url(url: str) -> str | None:
+    """Extracts the base_url from a subscription book URL."""
+    try:
+        parsed_url = urlparse(url)
+        query_params = parse_qs(parsed_url.query)
+        return query_params.get('baseurl', [None])[0]
+    except (AttributeError, IndexError):
+        return None
 
 def sanitize_filename(name):
     """Очистка имени файла от недопустимых символов"""
@@ -32,3 +48,13 @@ def extract_file_id(url):
         return match.group(1)
     
     return None
+
+def timing(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        end = time.perf_counter()
+        logger.info(f"[{func.__name__}] executed in {end - start:.4f} seconds")
+        return result
+    return wrapper
