@@ -82,11 +82,10 @@ class AuthService:
             logger.error(f"An error occurred during authentication check: {e}")
             return False
 
-    def _load_cookies(self, filename: str) -> None:
+    def _load_cookies(self, cookie_path: Path) -> None:
         """Load cookies from a JSON file into the session."""
-        cookie_path = Path(filename)
         if not cookie_path.exists():
-            logger.warning(f"Cookie file not found: {filename}")
+            logger.warning(f"Cookie file not found: {cookie_path}")
             return
 
         try:
@@ -108,11 +107,11 @@ class AuthService:
             else:
                 self._session.headers.pop("session-id", None)
                 
-            logger.info(f"Loaded {len(cookies)} cookies from {filename}")
+            logger.info(f"Loaded {len(cookies)} cookies from {cookie_path}")
         except Exception as e:
-            logger.error(f"Failed to load cookies from {filename}: {e}")
+            logger.error(f"Failed to load cookies from {cookie_path}: {e}")
 
-    def _save_cookies(self, filename: str, cookies: List[Dict]) -> None:
+    def _save_cookies(self, cookie_path: Path, cookies: List[Dict]) -> None:
         """Saves the essential SID cookie to a JSON file."""
         sid_cookie = next((c for c in cookies if c.get('name') == 'SID'), None)
 
@@ -121,13 +120,12 @@ class AuthService:
             return
 
         try:
-            cookie_path = Path(filename)
             cookie_path.parent.mkdir(parents=True, exist_ok=True)
             with cookie_path.open('w', encoding='utf-8') as f:
                 json.dump([sid_cookie], f, indent=2)
-            logger.info(f"SID cookie saved to {filename}")
+            logger.info(f"SID cookie saved to {cookie_path}")
         except Exception as e:
-            logger.error(f"Failed to save cookie file {filename}: {e}")
+            logger.error(f"Failed to save cookie file {cookie_path}: {e}")
             
     def _manual_login(self) -> Optional[List[Dict]]:
         """Opens a browser for the user to log in manually."""

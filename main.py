@@ -4,7 +4,7 @@ from enum import IntEnum
 from litres.config import setup_logging, logger
 from litres.exceptions import BookProcessingError
 from litres.services.auth_service import AuthService
-from litres.services.book_processor import BookProcessor
+from litres.book_processor import BookProcessor
 
 class ExitCode(IntEnum):
     SUCCESS = 0
@@ -37,7 +37,7 @@ def run_app() -> ExitCode:
 
     while True:
         try:
-            url = input("\nEnter book URL or press Enter to exit: ").strip()
+            url = input("Enter book URL or press Enter to exit: ").strip()
             if not url:
                 logger.info("Exiting program")
                 return ExitCode.SUCCESS

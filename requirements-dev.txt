@@ -1,0 +1,4 @@
+pyinstaller
+pytest
+pytest-mock
+pytest-cov 

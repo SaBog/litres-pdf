@@ -1,16 +1,11 @@
 import json
-from pathlib import Path
-from litres.models.book import TextBook
-from litres.services.pipelines.base import OutFormat
-from venv import logger
-from .base import TextProcessor
+from litres.config import logger
+from litres.engines.base import Engine, OutFormat
+from litres.models.output_path_handler import OutputPathHandler
 from litres.utils import key_re, comma_re
 
-class TxtProcessor(TextProcessor):
-    output_type = OutFormat.TXT
-    @property
-    def file_extension(self) -> str:
-        return 'txt'
+class O4ToTXTEngine(Engine):
+    SUPPORTED_OUT_FORMAT = OutFormat.TXT
 
     @staticmethod
     def _extract_text(data):
@@ -18,15 +13,15 @@ class TxtProcessor(TextProcessor):
         if isinstance(data, str):
             text = data
         elif isinstance(data, list):
-            text = "".join(TxtProcessor._extract_text(item) for item in data)
+            text = "".join(O4ToTXTEngine._extract_text(item) for item in data)
         elif isinstance(data, dict):
             if "c" in data and data["c"] is not None:
-                text = TxtProcessor._extract_text(data["c"])
+                text = O4ToTXTEngine._extract_text(data["c"])
         return text.replace("\u00ad", "")
 
-    def process(self, source_dir: Path, book: TextBook) -> str:
+    def execute(self, path: OutputPathHandler):
         txt_files = sorted(
-            f for f in source_dir.glob("*.txt")
+            f for f in path.source.glob("*.txt")
         )
         results = []
         for file in txt_files:
@@ -43,4 +38,12 @@ class TxtProcessor(TextProcessor):
                     results.append('\n'.join(book_text_part))
             except Exception as e:
                 logger.error(f"Failed to parse part file {file}: {e}")
-        return '\n'.join(results) 
+        
+        result_text = '\n'.join(results) 
+        filename = path.output / (path.filename + '.txt')
+
+        with open(filename, 'w', encoding='utf-8', buffering=1024*1024) as outfile:
+            outfile.write(result_text)
+
+        logger.info(f"Book text successfully saved to: {filename}") 
+        

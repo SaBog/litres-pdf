@@ -1,38 +1,42 @@
 import os
-import glob
-import re
 import tempfile
+
+from pathlib import Path
 from typing import List, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from PIL import Image
 from fpdf import FPDF
 from tqdm import tqdm
-from litres.config import logger
 
-class PDFService:
-    """Handles PDF optimization with parallel processing and size reduction."""
-    
+from litres.config import logger
+from litres.engines.base import Engine, OutFormat
+from litres.models.output_path_handler import OutputPathHandler
+
+
+class IMG2PDFEngine(Engine):
+    SUPPORTED_OUT_FORMAT = OutFormat.PDF
+
     def __init__(self, quality: int = 65, dpi: int = 150):
         if quality > 100:
             logger.warning(f"Invalid quality {quality}% clamped to 100%")
             quality = 100
         self.quality = quality
         self.dpi = dpi
-    
-    def _get_sorted_images(self, input_folder: str) -> List[str]:
+
+    def _get_sorted_images(self, input_folder: Path) -> List[Path]:
         """Get sorted list of image files in the input folder."""
         image_files = sorted(
-            glob.glob(os.path.join(input_folder, "*.jpg")) + 
-            glob.glob(os.path.join(input_folder, "*.gif")),
-            key=lambda x: int(os.path.basename(x).split('.')[0])
+            list(input_folder.glob("*.jpg")) + 
+            list(input_folder.glob("*.gif")),
+            key=lambda x: int(x.stem)
         )
         return image_files
     
-    def _process_image(self, img_path: str, temp_dir: str, index: int) -> Optional[str]:
+    def _process_image(self, img_path: Path, temp_dir: str, index: int) -> Optional[str]:
         """Process individual image and return temporary file path."""
-        output_path = os.path.join(temp_dir, f"page_{index:04d}.jpg")
+        output_path = os.path.join(temp_dir, f"{index:04d}.jpg")
         try:
-            with Image.open(img_path) as img:
+            with Image.open(str(img_path)) as img:
                 if img.mode in ('P', 'RGBA', 'LA'):
                     img = img.convert('RGB')
                 
@@ -57,10 +61,10 @@ class PDFService:
             logger.error(f"Error processing image {img_path}: {str(e)}")
             return None
     
-    def create_pdf(self, input_folder: str, output_pdf: str) -> None:
+    def execute(self, path: OutputPathHandler):
         """Create optimized PDF from a folder of images."""
         try:
-            image_files = self._get_sorted_images(input_folder)
+            image_files = self._get_sorted_images(path.source)
             if not image_files:
                 raise ValueError("No image files found in the input folder")
             
@@ -88,7 +92,7 @@ class PDFService:
                 # Check for processing failures
                 failed_indices = [i for i, tp in enumerate(sorted_temp_paths) if tp is None]
                 if failed_indices:
-                    failed_files = [image_files[i] for i in failed_indices]
+                    failed_files = [str(image_files[i]) for i in failed_indices]
                     raise ValueError(f"Failed to process images: {', '.join(failed_files)}")
                 
                 pdf = FPDF()
@@ -100,22 +104,9 @@ class PDFService:
                         pdf.add_page()
                         pdf.image(temp_path, x=0, y=0, w=210, h=297, type='JPG')
                 
-                output_dir = os.path.dirname(output_pdf)
-                file_name = os.path.basename(output_pdf)
-                sanitized_file_name = re.sub(r'[\\/*?:"<>|]', '_', file_name)
-                final_output_path = os.path.join(output_dir, sanitized_file_name)
-                
-                os.makedirs(output_dir, exist_ok=True)
-                pdf.output(final_output_path)
-                
-                # self._log_size_reduction(image_files, final_output_path)
-            
+                filename = path.output / (path.filename + '.pdf')
+                pdf.output(str(filename))
         except Exception as e:
             logger.error(f"PDF optimization failed: {str(e)}", exc_info=True)
             raise
-    
-    def _log_size_reduction(self, image_files: List[str], output_pdf: str) -> None:
-        """Calculate and log size reduction statistics."""
-        # original_size = sum(os.path.getsize(f) for f in image_files)
-        # final_size = os.path.getsize(output_pdf)
-        logger.info("Optimization complete")
+   

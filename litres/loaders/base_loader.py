@@ -1,22 +1,20 @@
+import time
+import requests
+
+from tqdm import tqdm
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import time
 from typing import List, Optional
 
-import requests
-from tqdm import tqdm
-
-from litres.config import settings
+from litres.config import settings, logger
 from litres.exceptions import BookProcessingError
-from litres.services.pipelines.base import SaveFolderInfo
+from litres.models.book import Book
+from litres.models.output_path_handler import OutputPathHandler
 from litres.utils import timing
-
-from ...config import logger
-from ...models import Book
 
 MAX_WORKERS = 8
 
-class Loader:
+class BaseLoaderCommand:
     """Handles downloading book parts with retry logic and progress tracking."""
 
     def __init__(self, session: requests.Session):
@@ -30,9 +28,9 @@ class Loader:
         )
 
     @timing
-    def download_parts(self, book: Book, fi: SaveFolderInfo) -> None:
+    def download_parts(self, book: Book, path: OutputPathHandler) -> None:
         """Download all missing parts for a book."""
-        existing_parts = self.look_for_loaded_content(fi.input_path)
+        existing_parts = self.look_for_loaded_content(path.source)
         expected_parts = set(range(book.total_parts))
         parts_to_download = sorted(expected_parts - set(existing_parts))
 
@@ -49,7 +47,7 @@ class Loader:
         ) as pbar, ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
 
             futures = {
-                executor.submit(self._download_part, part_num, book, fi.input_path): part_num
+                executor.submit(self._download_part, part_num, book, path.source): part_num
                 for part_num in parts_to_download
             }
 
@@ -65,13 +63,13 @@ class Loader:
                     pbar.update(1)
 
         # Проверка, что все страницы скачаны
-        downloaded_parts = set(self.look_for_loaded_content(fi.input_path))
+        downloaded_parts = set(self.look_for_loaded_content(path.source))
         missing_parts = expected_parts - downloaded_parts
 
         if missing_parts:
             raise BookProcessingError(f"Missing parts after download: {sorted(missing_parts)}")
         
-        logger.info(f"Book successfully saved to: {fi.input_path}")
+        logger.info(f"Book successfully saved to: {path.source}")
         
     def _download_part(self, part_num: int, book: Book, source_dir: Path) -> bool:
         raise NotImplementedError(f'_download_part require implementation')

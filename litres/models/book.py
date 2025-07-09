@@ -53,3 +53,10 @@ class PdfBook(Book):
 @dataclass
 class TextBook(Book):
     base_url: str
+
+@dataclass
+class BookRequest:
+    url: str
+    file_id: Optional[str] = None
+    art_id: Optional[str] = None
+    base_url: Optional[str] = None

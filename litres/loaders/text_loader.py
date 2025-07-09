@@ -1,11 +1,10 @@
 from pathlib import Path
-from litres.models.book import Book
-from litres.services.loaders.loader import Loader
 
-from ...config import logger
-from ...models import TextBook
+from litres.loaders.base_loader import BaseLoaderCommand
+from litres.models.book import Book, TextBook
+from litres.config.logging import logger
 
-class TextLoader(Loader):
+class TextLoaderCommand(BaseLoaderCommand):
     def _download_part(self, part_num: int, book: Book, source_dir: Path) -> bool:
         """Download a single part with retry logic."""
         assert isinstance(book, TextBook), f"Expected PdfBook, got {type(book).__name__}"

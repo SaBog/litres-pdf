@@ -1,9 +1,10 @@
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class AppSettings(BaseSettings):
     # Configuration model with default values
     test_mode: bool = False
-    cookie_file: str = "cookies.json"
+    cookie_file: Path = Path("cookies.json")
     max_workers: int = 4
     delay: float = 1.0
     quality: int = 65
