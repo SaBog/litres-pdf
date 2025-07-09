@@ -9,6 +9,7 @@ from litres.handlers.base import BaseUrlHandler, OutFormat
 from litres.handlers.handler_url_o3 import HandlerUrlO3
 from litres.handlers.handler_url_o4 import HandlerUrlO4
 from litres.handlers.handler_url_o5 import HandlerUrlO5
+from litres.handlers.handler_url_audiobook import HandlerUrlAudiobook
 from litres.commands.book_request import BookRequestCommand
 
 class BookProcessor:
@@ -21,6 +22,7 @@ class BookProcessor:
             HandlerUrlO3(session), 
             HandlerUrlO4(session), 
             HandlerUrlO5(session),
+            HandlerUrlAudiobook(session),
         ]
 
     def _is_general_book_url(self, url: str) -> bool:
@@ -48,4 +50,4 @@ class BookProcessor:
         handler = self._select_handler(book_req)
 
         handler.load(book_req)
-        handler.save(out_format=[OutFormat.PDF, OutFormat.TXT]) 
+        handler.save(out_format=[OutFormat.PDF, OutFormat.TXT, OutFormat.MP3]) 

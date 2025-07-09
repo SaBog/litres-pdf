@@ -55,6 +55,10 @@ class TextBook(Book):
     base_url: str
 
 @dataclass
+class AudioBook(Book):
+    art_id: str
+
+@dataclass
 class BookRequest:
     url: str
     file_id: Optional[str] = None

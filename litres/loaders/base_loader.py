@@ -37,6 +37,8 @@ class BaseLoaderCommand:
         if not parts_to_download:
             logger.info("All parts are already downloaded.")
             return
+        
+        overall_success = True
 
         with tqdm(
             total=len(parts_to_download),
@@ -56,7 +58,8 @@ class BaseLoaderCommand:
                 try:
                     success = future.result()
                     if not success:
-                        logger.warning(f"Download failed for part {part_num}")
+                        overall_success = False
+                        logger.error(f"Download failed for part {part_num}")
                 except Exception as e:
                     logger.error(f"Exception while downloading part {part_num}: {e}")
                 finally:
@@ -66,8 +69,8 @@ class BaseLoaderCommand:
         downloaded_parts = set(self.look_for_loaded_content(path.source))
         missing_parts = expected_parts - downloaded_parts
 
-        if missing_parts:
-            raise BookProcessingError(f"Missing parts after download: {sorted(missing_parts)}")
+        if not overall_success or missing_parts:
+            raise BookProcessingError(f"Missing or corrupted parts after download: {sorted(missing_parts)}")
         
         logger.info(f"Book successfully saved to: {path.source}")
         
