@@ -5,7 +5,7 @@ import json
 import requests
 from selenium import webdriver
 from litres.services.auth_service import AuthService
-from litres.config import settings, logger
+from litres.config import app_settings, logger
 
 class TestAuthService:
     """Test suite for AuthService class."""
@@ -22,7 +22,7 @@ class TestAuthService:
         mock_session_instance.headers.update.assert_called_once_with({
             "accept": "*/*",
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "referer": f"{settings.domain}",
+            "referer": f"{app_settings.DOMAIN}",
         })
 
     @patch("pathlib.Path.exists")

@@ -7,10 +7,8 @@ from litres.loaders.base_loader import BaseLoaderCommand
 URL_TEMPLATE ="https://www.litres.ru/download_book_subscr/{art_id}/{file_id}/{filename}"
 
 
-class AudioLoaderCommand(BaseLoaderCommand):
-    def _download_part(self, part_num: int, book: Book, source_dir: Path) -> bool:
-        assert isinstance(book, AudioBook), f"Expected AudioBook, got {type(book).__name__}"
-
+class AudioLoaderCommand(BaseLoaderCommand[AudioBook]):
+    def _download_part(self, part_num: int, book: AudioBook, source_dir: Path) -> bool:
         part = book.parts[part_num]
         url = URL_TEMPLATE.format(
             art_id=book.art_id,

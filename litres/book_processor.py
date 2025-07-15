@@ -50,4 +50,4 @@ class BookProcessor:
         handler = self._select_handler(book_req)
 
         handler.load(book_req)
-        handler.save(out_format=[OutFormat.PDF, OutFormat.TXT, OutFormat.MP3]) 
+        handler.save(out_format=[OutFormat.PDF, OutFormat.FB2, OutFormat.MP3]) 

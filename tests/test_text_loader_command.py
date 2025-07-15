@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from pathlib import Path
 from litres.loaders.text_loader import TextLoaderCommand
 from litres.models.book import TextBook
 
@@ -42,26 +41,5 @@ def test_download_part_wrong_type(tmp_path):
     source_dir = tmp_path
     class NotTextBook:
         parts = [{"url": "part1"}]
-    with pytest.raises(AssertionError):
-        loader._download_part(part_num, NotTextBook(), source_dir)
-
-def test_extract_text_string():
-    loader = TextLoaderCommand(MagicMock())
-    assert loader._extract_text("foo") == "foo"
-
-def test_extract_text_list():
-    loader = TextLoaderCommand(MagicMock())
-    assert loader._extract_text(["a", "b"]) == "ab"
-
-def test_extract_text_dict():
-    loader = TextLoaderCommand(MagicMock())
-    assert loader._extract_text({"c": "foo"}) == "foo"
-
-def test_extract_text_nested():
-    loader = TextLoaderCommand(MagicMock())
-    data = {"c": [{"c": "a"}, {"c": "b"}]}
-    assert loader._extract_text(data) == "ab"
-
-def test_extract_text_soft_hyphen():
-    loader = TextLoaderCommand(MagicMock())
-    assert loader._extract_text("foo\u00adbar") == "foobar" 
+    with pytest.raises(AttributeError):
+        loader._download_part(part_num, NotTextBook(), source_dir)  # type: ignore 

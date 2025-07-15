@@ -1,10 +1,10 @@
 # litres/config/__init__.py
 
 from .logging import setup_logging, logger
-from .settings import settings
+from .settings import app_settings
 
 __all__ = [
     'setup_logging',
     'logger',
-    'settings'
+    'app_settings'
 ]

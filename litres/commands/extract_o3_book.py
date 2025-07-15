@@ -14,7 +14,7 @@ class ExtractO3BookCommand:
     def __init__(self, session: requests.Session):
         self._session = session
 
-    def get(self, bq: BookRequest):
+    def get(self, bq: BookRequest) -> PdfBook:
         """Fetch and parse book metadata from LitRes using BookRequest."""
         file_id = bq.file_id or self._extract_file_id(bq.url)
         if not file_id:
@@ -57,7 +57,7 @@ class ExtractO3BookCommand:
         return None
 
 
-    def _extract_o3_book_data(self, response_text: str) -> Book:
+    def _extract_o3_book_data(self, response_text: str) -> PdfBook:
         """Extracts and parses book data from the custom JS object response."""
         try:
             # The file_id is also present in the response, let's use it.

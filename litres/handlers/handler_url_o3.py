@@ -1,5 +1,5 @@
 from litres.commands.extract_o3_book import ExtractO3BookCommand
-from litres.config import settings, logger
+from litres.config import app_settings, logger
 from litres.loaders.pdf_loader import ImgLoaderCommand
 from litres.models.book import BookRequest
 from litres.engines.img_2_pdf import IMG2PDFEngine
@@ -9,8 +9,8 @@ from litres.handlers.base import BaseUrlHandler
 class HandlerUrlO3(BaseUrlHandler):
     engines = [
         IMG2PDFEngine(
-            quality=settings.quality, 
-            dpi=settings.dpi,
+            quality=app_settings.quality, 
+            dpi=app_settings.dpi,
         )
     ]
 

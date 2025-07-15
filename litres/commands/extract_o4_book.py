@@ -13,7 +13,7 @@ class ExtractO4BookCommand:
     def __init__(self, session: requests.Session):
         self._session = session
 
-    def get(self, bq: BookRequest):
+    def get(self, bq: BookRequest) -> TextBook:
         """Fetch and parse text book metadata from LitRes using BookRequest."""
         base_url = bq.base_url or self._extract_base_url(bq.url)
         if not base_url:
@@ -35,7 +35,7 @@ class ExtractO4BookCommand:
         except (AttributeError, IndexError):
             return None
     
-    def _extract_o4_book_data(self, text: str, base_url: str) -> Book:
+    def _extract_o4_book_data(self, text: str, base_url: str) -> TextBook:
         try:
             # The response is not valid JSON, it's a JS object. It needs to be cleaned up.
             text_data = re.sub(r'([{,]\s*)(\w+)(\s*:)', r'\1"\2"\3', text)

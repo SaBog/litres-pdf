@@ -1,5 +1,6 @@
 from enum import Enum
 from litres.models.output_path_handler import OutputPathHandler
+from litres.models.book import Book
 
 from abc import abstractmethod
 from typing import List
@@ -17,7 +18,7 @@ class Engine:
     SUPPORTED_OUT_FORMAT: OutFormat
 
     @abstractmethod
-    def execute(self, path: OutputPathHandler):
+    def execute(self, book: Book, path: OutputPathHandler):
         pass
 
     def supports(self, out_formats: List[OutFormat]) -> bool:

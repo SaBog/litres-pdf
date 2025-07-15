@@ -42,5 +42,5 @@ def test_download_part_wrong_type(tmp_path):
     source_dir = tmp_path
     class NotPdfBook:
         parts = [MagicMock(width=100, height=200, extension="pdf")]
-    with pytest.raises(AssertionError):
-        loader._download_part(part_num, NotPdfBook(), source_dir) 
+    with pytest.raises(AttributeError):
+        loader._download_part(part_num, NotPdfBook(), source_dir)  # type: ignore 

@@ -1,6 +1,7 @@
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class AppSettings(BaseSettings):
     # Configuration model with default values
     test_mode: bool = False
@@ -9,9 +10,17 @@ class AppSettings(BaseSettings):
     delay: float = 1.0
     quality: int = 65
     dpi: int = 300
-    domain: str = 'https://www.litres.ru/'
     source_dir: str = 'books-source'
     books_dir: str = 'books'
+
+    DOMAIN: str = 'https://www.litres.ru/'
+    SOURCE_IMAGE_FOLDER: str ='images'
+    SUPPORTED_IMAGE_EXTENSIONS: dict[str, str] = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif'
+    }
 
     # Configuration sources
     model_config = SettingsConfigDict(
@@ -22,4 +31,4 @@ class AppSettings(BaseSettings):
     )
 
 
-settings = AppSettings()
+app_settings = AppSettings()

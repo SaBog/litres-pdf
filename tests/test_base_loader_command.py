@@ -7,7 +7,7 @@ from litres.models.output_path_handler import OutputPathHandler
 from litres.exceptions import BookProcessingError
 import requests
 
-class DummyLoader(BaseLoaderCommand):
+class DummyLoader(BaseLoaderCommand[Book]):
     def _download_part(self, part_num, book, source_dir):
         return True
     def fetch(self, url, delay=0.1):
@@ -55,7 +55,7 @@ def test_download_parts_missing_parts(monkeypatch):
         loader.download_parts(book, path)
 
 def test_download_part_not_implemented():
-    loader = BaseLoaderCommand(MagicMock())
+    loader = BaseLoaderCommand[Book](MagicMock())
     with pytest.raises(NotImplementedError):
         loader._download_part(0, MagicMock(), Path("/tmp"))
 
@@ -67,11 +67,11 @@ def test_fetch_with_retry_success(monkeypatch):
 
 def test_fetch_with_retry_429(monkeypatch):
     loader = DummyLoader(MagicMock())
-    class Resp:
-        status_code = 429
-        headers = {"Retry-After": "1"}
+    resp = MagicMock()
+    resp.status_code = 429
+    resp.headers = {"Retry-After": "1"}
     def fetch(url, delay=0.1):
-        raise requests.exceptions.HTTPError(response=Resp())
+        raise requests.exceptions.HTTPError(response=resp)
     monkeypatch.setattr(loader, "fetch", fetch)
     with patch("litres.loaders.base_loader.logger.warning") as log_warn:
         with pytest.raises(RuntimeError):

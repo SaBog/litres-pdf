@@ -4,9 +4,9 @@ import requests
 from tqdm import tqdm
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Optional
+from typing import List, Optional, TypeVar, Generic
 
-from litres.config import settings, logger
+from litres.config import app_settings, logger
 from litres.exceptions import BookProcessingError
 from litres.models.book import Book
 from litres.models.output_path_handler import OutputPathHandler
@@ -14,7 +14,9 @@ from litres.utils import timing
 
 MAX_WORKERS = 8
 
-class BaseLoaderCommand:
+T = TypeVar('T', bound=Book)
+
+class BaseLoaderCommand(Generic[T]):
     """Handles downloading book parts with retry logic and progress tracking."""
 
     def __init__(self, session: requests.Session):
@@ -28,7 +30,7 @@ class BaseLoaderCommand:
         )
 
     @timing
-    def download_parts(self, book: Book, path: OutputPathHandler) -> None:
+    def download_parts(self, book: T, path: OutputPathHandler) -> None:
         """Download all missing parts for a book."""
         existing_parts = self.look_for_loaded_content(path.source)
         expected_parts = set(range(book.total_parts))
@@ -74,13 +76,13 @@ class BaseLoaderCommand:
         
         logger.info(f"Book successfully saved to: {path.source}")
         
-    def _download_part(self, part_num: int, book: Book, source_dir: Path) -> bool:
+    def _download_part(self, part_num: int, book: T, source_dir: Path) -> bool:
         raise NotImplementedError(f'_download_part require implementation')
     
     def _fetch_with_retry(self, url: str, filepath: Path, max_attempts: int = 2) -> requests.Response:
         """Try to fetch a file with retries and rate limiting handling."""
         attempt = 0
-        delay = settings.delay
+        delay = app_settings.delay
         while attempt < max_attempts:
             attempt += 1
             try:
@@ -94,9 +96,11 @@ class BaseLoaderCommand:
                 logger.warning(f"Network error during fetch: {e}")
         raise RuntimeError(f"Failed to fetch {url} after {max_attempts} attempts")
 
-    def fetch(self, url: str, delay: float = 0.1) -> requests.Response:
+    def fetch(self, url: str, delay: float = 0) -> requests.Response:
         """Download and write content from URL to file."""
-        time.sleep(delay)
+        if (delay > 0):
+            time.sleep(delay)
+        
         response = self._session.get(url, stream=True, timeout=30)
         response.raise_for_status()
         return response

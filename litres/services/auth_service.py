@@ -7,7 +7,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 
-from ..config import settings, logger
+from ..config import app_settings, logger
 
 class AuthService:
     """Handles authentication, session, and browser management."""
@@ -22,7 +22,7 @@ class AuthService:
         session.headers.update({
             "accept": "*/*",
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "referer": f"{settings.domain}",
+            "referer": f"{app_settings.DOMAIN}",
         })
         return session
 
@@ -36,7 +36,7 @@ class AuthService:
     def authenticate(self) -> bool:
         """Main authentication flow."""
         logger.debug("Starting authentication process")
-        self._load_cookies(settings.cookie_file)
+        self._load_cookies(app_settings.cookie_file)
 
         if self._check_authentication():
             self.is_authenticated = True
@@ -50,8 +50,8 @@ class AuthService:
             self.is_authenticated = False
             return False
 
-        self._save_cookies(settings.cookie_file, cookies)
-        self._load_cookies(settings.cookie_file)
+        self._save_cookies(app_settings.cookie_file, cookies)
+        self._load_cookies(app_settings.cookie_file)
 
         self.is_authenticated = self._check_authentication()
         if self.is_authenticated:

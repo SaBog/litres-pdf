@@ -9,6 +9,8 @@ def setup_logging():
         handlers=[logging.StreamHandler()],
     )
 
+    logging.getLogger("fontTools").setLevel(logging.ERROR)
+    
     # Configure structlog
     structlog.configure(
         processors=[
@@ -25,5 +27,6 @@ def setup_logging():
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
+
 
 logger: structlog.stdlib.BoundLogger = structlog.get_logger()

@@ -6,7 +6,7 @@ class AudioMergeEngine(Engine):
     SUPPORTED_OUT_FORMAT = OutFormat.MP3
 
     # TODO: Use ffmpeg to concatenate
-    def execute(self, path: OutputPathHandler):
+    def execute(self, book, path: OutputPathHandler):
         mp3_files = sorted(path.source.glob('*.mp3'))
         if not mp3_files:
             logger.error('No mp3 files found to merge!')
