@@ -2,7 +2,7 @@ import sys
 from enum import IntEnum
 
 from litres.book_processor import BookProcessor
-from litres.config import logger, setup_logging
+from litres.config import app_settings, logger, setup_logging
 from litres.exceptions import BookProcessingError
 from litres.services.auth_service import AuthService
 
@@ -28,6 +28,7 @@ Bypasses subscription wall and merges pages
 def run_app() -> ExitCode:
     """Main application loop."""
     logger.info("Application started")
+    logger.info(f"Current App Settings: {app_settings.model_dump(mode="json")}")
 
     auth_service = AuthService()
     if not auth_service.authenticate():

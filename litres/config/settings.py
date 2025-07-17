@@ -1,6 +1,10 @@
 from pathlib import Path
+from typing import List
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from litres.engines.base import OutFormat
 
 
 class AppSettings(BaseSettings):
@@ -14,6 +18,15 @@ class AppSettings(BaseSettings):
     source_dir: str = 'books-source'
     books_dir: str = 'books'
 
+    out_format_priority: List[OutFormat] = [OutFormat.PDF, OutFormat.FB2, OutFormat.MP3]
+
+    @field_validator('out_format_priority', mode='before')
+    @classmethod
+    def parse_out_format_priority(cls, v):
+        if isinstance(v, str):
+            return [OutFormat(item.strip().lower()) for item in v.split(",")]
+        return v
+    
     # Configuration sources
     model_config = SettingsConfigDict(
         env_file="config.ini",

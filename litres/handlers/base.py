@@ -36,17 +36,17 @@ class BaseUrlHandler(ABC):
     def load(self, bq: BookRequest):
         pass
 
-    def save(self, out_format: List[OutFormat]):
-        engine = self._select_engine(out_format)
-        logger.debug(f'Using engine:{engine.__str__}')
+    def save(self, out_format_priority: List[OutFormat]):
+        engine = self._select_engine(out_format_priority)
+        logger.debug(f'Using engine: {engine}')
         
         engine.execute(self.book, self.path_handler)
-        logger.info(f'File:{self.path_handler.filename} saved')
+        logger.info(f'File: {self.path_handler.filename} saved')
 
-    def _select_engine(self, out_format: List[OutFormat]):
-        for engine in self.engines:
-            if engine.supports(out_format):
-                return engine
-        
-        raise BookProcessingError("Engine not found")
-    
+    def _select_engine(self, out_format_priority: List[OutFormat]):
+        for preferred_format in out_format_priority:
+            for engine in self.engines:
+                if engine.supports([preferred_format]):
+                    logger.debug(f'Found engine for preferred format: {preferred_format}')
+                    return engine
+        raise BookProcessingError("No available engine found for any of the preferred formats")

@@ -45,7 +45,7 @@ class AuthService:
             logger.info("Authentication successful with existing session.")
             return True
         
-        logger.info("Existing session is not valid. Starting manual login...")
+        logger.info("Existing session is not valid. Starting manual login... (This may take several minutes)")
         cookies = self._manual_login()
         if not cookies:
             logger.error("Manual login failed. Could not retrieve cookies.")

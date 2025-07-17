@@ -5,8 +5,9 @@ from typing import List
 import requests
 
 from litres.commands.book_request import BookRequestCommand
+from litres.config import app_settings
 from litres.exceptions import BookProcessingError
-from litres.handlers.base import BaseUrlHandler, OutFormat
+from litres.handlers.base import BaseUrlHandler
 from litres.handlers.handler_url_audiobook import HandlerUrlAudiobook
 from litres.handlers.handler_url_o3 import HandlerUrlO3
 from litres.handlers.handler_url_o4 import HandlerUrlO4
@@ -52,4 +53,4 @@ class BookProcessor:
         handler = self._select_handler(book_req)
 
         handler.load(book_req)
-        handler.save(out_format=[OutFormat.PDF, OutFormat.FB2, OutFormat.MP3]) 
+        handler.save(app_settings.out_format_priority)
