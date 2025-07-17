@@ -1,11 +1,13 @@
-import pytest
-from unittest.mock import patch, mock_open, MagicMock, call
-from pathlib import Path
 import json
-import requests
-from selenium import webdriver
+from pathlib import Path
+from unittest.mock import MagicMock, mock_open, patch
+
+import pytest
+
+from litres.config import logger
+from litres.constants import DOMAIN
 from litres.services.auth_service import AuthService
-from litres.config import app_settings, logger
+
 
 class TestAuthService:
     """Test suite for AuthService class."""
@@ -22,7 +24,7 @@ class TestAuthService:
         mock_session_instance.headers.update.assert_called_once_with({
             "accept": "*/*",
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "referer": f"{app_settings.DOMAIN}",
+            "referer": f"{DOMAIN}",
         })
 
     @patch("pathlib.Path.exists")

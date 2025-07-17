@@ -1,6 +1,7 @@
+from litres.config import logger
 from litres.engines.base import Engine, OutFormat
 from litres.models.output_path_handler import OutputPathHandler
-from litres.config import logger
+
 
 class AudioMergeEngine(Engine):
     SUPPORTED_OUT_FORMAT = OutFormat.MP3

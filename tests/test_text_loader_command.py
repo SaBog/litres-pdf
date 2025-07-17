@@ -1,7 +1,10 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 from litres.loaders.text_loader import TextLoaderCommand
 from litres.models.book import TextBook
+
 
 class DummyTextBook(TextBook):
     def __init__(self):

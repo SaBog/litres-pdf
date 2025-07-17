@@ -1,8 +1,8 @@
-import requests
 import re
 
-from litres.models.book import AudioBook, BookMeta, Author
-from litres.config import logger
+import requests
+
+from litres.models.book import AudioBook, Author, BookMeta
 from litres.utils import extract_initial_state
 
 

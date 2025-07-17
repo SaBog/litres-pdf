@@ -1,14 +1,14 @@
-import requests
-
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List
 
-from litres.models.output_path_handler import OutputPathHandler
-from litres.models.book import Book, BookRequest
-from litres.config import logger, app_settings
-from litres.exceptions import BookProcessingError
+import requests
+
+from litres.config import app_settings, logger
 from litres.engines.base import Engine, OutFormat
+from litres.exceptions import BookProcessingError
+from litres.models.book import Book, BookRequest
+from litres.models.output_path_handler import OutputPathHandler
 from litres.utils import sanitize_filename
 
 

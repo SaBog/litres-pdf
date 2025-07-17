@@ -1,9 +1,10 @@
 import json
-from pathlib import Path
 import re
 import time
 from functools import wraps
+from pathlib import Path
 from typing import List
+
 from litres.config import logger
 
 # Глобальные скомпилированные регулярки для парсинга JS-like JSON

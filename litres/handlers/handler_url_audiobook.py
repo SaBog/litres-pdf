@@ -1,9 +1,10 @@
-from litres.handlers.base import BaseUrlHandler
-from litres.models.book import BookRequest
 from litres.commands.extract_audiobook import ExtractAudiobookCommand
-from litres.loaders.audio_loader import AudioLoaderCommand
 from litres.config import logger
 from litres.engines.audio_merge import AudioMergeEngine
+from litres.handlers.base import BaseUrlHandler
+from litres.loaders.audio_loader import AudioLoaderCommand
+from litres.models.book import BookRequest
+
 
 class HandlerUrlAudiobook(BaseUrlHandler):
     engines = [AudioMergeEngine()]

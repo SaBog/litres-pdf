@@ -1,10 +1,11 @@
 import sys
 from enum import IntEnum
 
-from litres.config import setup_logging, logger
+from litres.book_processor import BookProcessor
+from litres.config import logger, setup_logging
 from litres.exceptions import BookProcessingError
 from litres.services.auth_service import AuthService
-from litres.book_processor import BookProcessor
+
 
 class ExitCode(IntEnum):
     SUCCESS = 0

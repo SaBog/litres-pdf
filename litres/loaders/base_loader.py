@@ -1,10 +1,10 @@
 import time
-import requests
-
-from tqdm import tqdm
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Optional, TypeVar, Generic
+from pathlib import Path
+from typing import Generic, List, Optional, TypeVar
+
+import requests
+from tqdm import tqdm
 
 from litres.config import app_settings, logger
 from litres.exceptions import BookProcessingError
@@ -77,7 +77,7 @@ class BaseLoaderCommand(Generic[T]):
         logger.info(f"Book successfully saved to: {path.source}")
         
     def _download_part(self, part_num: int, book: T, source_dir: Path) -> bool:
-        raise NotImplementedError(f'_download_part require implementation')
+        raise NotImplementedError('_download_part require implementation')
     
     def _fetch_with_retry(self, url: str, filepath: Path, max_attempts: int = 2) -> requests.Response:
         """Try to fetch a file with retries and rate limiting handling."""

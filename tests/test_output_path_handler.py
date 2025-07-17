@@ -1,6 +1,8 @@
 import tempfile
 from pathlib import Path
+
 from litres.models.output_path_handler import OutputPathHandler
+
 
 def test_output_path_handler_makedirs():
     with tempfile.TemporaryDirectory() as tmpdir:

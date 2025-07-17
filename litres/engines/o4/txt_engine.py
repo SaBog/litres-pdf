@@ -1,10 +1,9 @@
-import json
 from litres.config import logger
 from litres.engines.base import Engine, OutFormat
 from litres.models.output_path_handler import OutputPathHandler
-from litres.utils import key_re, comma_re
 
-class O4ToTXTEngine(Engine):
+
+class TXTEngine(Engine):
     SUPPORTED_OUT_FORMAT = OutFormat.TXT
 
     @staticmethod
@@ -13,10 +12,10 @@ class O4ToTXTEngine(Engine):
         if isinstance(data, str):
             text = data
         elif isinstance(data, list):
-            text = "".join(O4ToTXTEngine._extract_text(item) for item in data)
+            text = "".join(TXTEngine._extract_text(item) for item in data)
         elif isinstance(data, dict):
             if "c" in data and data["c"] is not None:
-                text = O4ToTXTEngine._extract_text(data["c"])
+                text = TXTEngine._extract_text(data["c"])
         return text.replace("\u00ad", "")
 
     def execute(self, book, path: OutputPathHandler):

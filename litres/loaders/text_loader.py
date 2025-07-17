@@ -1,10 +1,12 @@
 import os
-from pathlib import Path
 import re
+from pathlib import Path
 
+from litres.config import logger
+from litres.constants import SOURCE_IMAGE_FOLDER
 from litres.loaders.base_loader import BaseLoaderCommand
 from litres.models.book import TextBook
-from litres.config import logger, app_settings
+
 
 class TextLoaderCommand(BaseLoaderCommand[TextBook]):
     IMAGE_URL_TEMPLATE = "https://www.litres.ru{base_url}json/{img_name}"
@@ -21,7 +23,7 @@ class TextLoaderCommand(BaseLoaderCommand[TextBook]):
             with filepath.open('w', encoding="utf-8") as f:
                 f.write(response.text)
             # --- Download images if present ---
-            self._download_images_from_text(response.text, book.base_url, source_dir / app_settings.SOURCE_IMAGE_FOLDER)
+            self._download_images_from_text(response.text, book.base_url, source_dir / SOURCE_IMAGE_FOLDER)
             return True
         except Exception as e:
             logger.error(f"Failed to download part {part_num}: {e}")

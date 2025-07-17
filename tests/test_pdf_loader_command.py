@@ -1,8 +1,10 @@
-import pytest
 from unittest.mock import MagicMock, patch
-from pathlib import Path
+
+import pytest
+
 from litres.loaders.pdf_loader import ImgLoaderCommand
-from litres.models.book import PdfBook, Page
+from litres.models.book import Page, PdfBook
+
 
 class DummyPdfBook(PdfBook):
     def __init__(self):

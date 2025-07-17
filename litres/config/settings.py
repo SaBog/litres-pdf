@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,15 +13,6 @@ class AppSettings(BaseSettings):
     dpi: int = 300
     source_dir: str = 'books-source'
     books_dir: str = 'books'
-
-    DOMAIN: str = 'https://www.litres.ru/'
-    SOURCE_IMAGE_FOLDER: str ='images'
-    SUPPORTED_IMAGE_EXTENSIONS: dict[str, str] = {
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.png': 'image/png',
-        '.gif': 'image/gif'
-    }
 
     # Configuration sources
     model_config = SettingsConfigDict(

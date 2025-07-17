@@ -1,5 +1,7 @@
 import pytest
+
 from litres.utils import sanitize_filename, timing
+
 
 @pytest.mark.parametrize("name,expected", [
     ("simple.txt", "simple.txt"),

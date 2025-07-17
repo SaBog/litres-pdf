@@ -1,7 +1,8 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
 from litres.book_processor import BookProcessor
 from litres.models.book import BookRequest
+
 
 @patch("litres.book_processor.BaseUrlHandler")
 @patch("litres.book_processor.BookRequestCommand.create", return_value=BookRequest(url="https://www.litres.ru/book/author/book-title-12345/"))

@@ -1,5 +1,6 @@
-from litres.models.book import Author, Page, BookMeta, Book, PdfBook, TextBook, BookRequest
-import pytest
+from litres.models.book import (Author, Book, BookMeta, BookRequest, Page,
+                                PdfBook, TextBook)
+
 
 def test_author_full_name():
     a = Author(first="Ivan", middle="Ivanovich", last="Petrov")

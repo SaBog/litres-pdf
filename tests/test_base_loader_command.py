@@ -1,11 +1,12 @@
-import pytest
-from unittest.mock import MagicMock, patch, call
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
+import requests
+
 from litres.loaders.base_loader import BaseLoaderCommand
 from litres.models.book import Book
-from litres.models.output_path_handler import OutputPathHandler
-from litres.exceptions import BookProcessingError
-import requests
+
 
 class DummyLoader(BaseLoaderCommand[Book]):
     def _download_part(self, part_num, book, source_dir):

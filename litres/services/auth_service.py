@@ -1,13 +1,15 @@
 import json
-import requests
 from pathlib import Path
 from typing import Dict, List, Optional
 
+import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 
 from ..config import app_settings, logger
+from ..constants import DOMAIN
+
 
 class AuthService:
     """Handles authentication, session, and browser management."""
@@ -22,7 +24,7 @@ class AuthService:
         session.headers.update({
             "accept": "*/*",
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "referer": f"{app_settings.DOMAIN}",
+            "referer": f"{DOMAIN}",
         })
         return session
 

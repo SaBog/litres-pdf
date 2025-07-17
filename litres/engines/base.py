@@ -1,9 +1,9 @@
-from enum import Enum
-from litres.models.output_path_handler import OutputPathHandler
-from litres.models.book import Book
-
 from abc import abstractmethod
+from enum import Enum
 from typing import List
+
+from litres.models.book import Book
+from litres.models.output_path_handler import OutputPathHandler
 
 
 class OutFormat(Enum):

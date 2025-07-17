@@ -1,7 +1,4 @@
 
-import json
-import re
-
 import requests
 
 from litres.models.book import BookRequest

@@ -1,10 +1,11 @@
 import json
 import re
 from urllib.parse import parse_qs, urlparse
+
 import requests
 
 from litres.exceptions import BookProcessingError
-from litres.models.book import Author, Book, BookMeta, BookRequest, TextBook
+from litres.models.book import Author, BookMeta, BookRequest, TextBook
 
 o4_URL_TEMPLATE = "https://www.litres.ru{url}json/toc.js"
 
@@ -65,5 +66,5 @@ class ExtractO4BookCommand:
                 parts=data.get("Parts", [])
             )
         except json.JSONDecodeError as e:
-            raise BookProcessingError(f"Text book metadata retrieval error", e)
+            raise BookProcessingError("Text book metadata retrieval error", e)
         

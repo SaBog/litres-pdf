@@ -1,6 +1,6 @@
 # litres/config/__init__.py
 
-from .logging import setup_logging, logger
+from .logging import logger, setup_logging
 from .settings import app_settings
 
 __all__ = [

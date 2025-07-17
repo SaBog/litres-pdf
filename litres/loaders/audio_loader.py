@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from litres.models.book import AudioBook, Book
 from litres.config import logger
 from litres.loaders.base_loader import BaseLoaderCommand
+from litres.models.book import AudioBook
 
 URL_TEMPLATE ="https://www.litres.ru/download_book_subscr/{art_id}/{file_id}/{filename}"
 

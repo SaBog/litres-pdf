@@ -1,5 +1,7 @@
-import structlog
 import logging
+
+import structlog
+
 
 def setup_logging():
     """Настройка structlog с продвинутыми возможностями"""
@@ -9,6 +11,7 @@ def setup_logging():
         handlers=[logging.StreamHandler()],
     )
 
+    logging.getLogger("tqdm").setLevel(logging.WARNING)
     logging.getLogger("fontTools").setLevel(logging.ERROR)
     
     # Configure structlog

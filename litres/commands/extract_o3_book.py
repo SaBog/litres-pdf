@@ -1,11 +1,12 @@
 import json
 import re
 from urllib.parse import parse_qs, urlparse
+
 import requests
 
-from litres.exceptions import BookProcessingError
-from litres.models.book import Author, Book, BookMeta, BookRequest, Page, PdfBook
 from litres.config import logger
+from litres.exceptions import BookProcessingError
+from litres.models.book import Author, BookMeta, BookRequest, Page, PdfBook
 
 o3_URL_TEMPLATE = "https://www.litres.ru/pages/get_pdf_js/?file={file_id}"
 

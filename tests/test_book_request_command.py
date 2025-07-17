@@ -1,7 +1,9 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
+
 from litres.commands.book_request import BookRequestCommand
-from litres.models.book import BookRequest
+
 
 # __extract_user_id
 @pytest.mark.parametrize("state,expected", [

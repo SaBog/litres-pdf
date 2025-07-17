@@ -1,16 +1,18 @@
 
 import re
-import requests
 from typing import List
 
+import requests
+
+from litres.commands.book_request import BookRequestCommand
 from litres.exceptions import BookProcessingError
-from litres.models.book import BookRequest
 from litres.handlers.base import BaseUrlHandler, OutFormat
+from litres.handlers.handler_url_audiobook import HandlerUrlAudiobook
 from litres.handlers.handler_url_o3 import HandlerUrlO3
 from litres.handlers.handler_url_o4 import HandlerUrlO4
 from litres.handlers.handler_url_o5 import HandlerUrlO5
-from litres.handlers.handler_url_audiobook import HandlerUrlAudiobook
-from litres.commands.book_request import BookRequestCommand
+from litres.models.book import BookRequest
+
 
 class BookProcessor:
     """Orchestrates the book processing workflow using BookPipeline subclasses."""

@@ -1,0 +1,25 @@
+[project]
+name = "litres-pdf"
+version = "0.1.3a"
+description = "Application to allow download pdf from LitRes.ru by subscription"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fpdf2>=2.8.3",
+    "pillow>=11.3.0",
+    "pydantic-settings>=2.10.1",
+    "requests>=2.32.4",
+    "selenium>=4.34.2",
+    "structlog>=25.4.0",
+    "tqdm>=4.67.1",
+]
+
+[dependency-groups]
+dev = [
+    "isort>=6.0.1",
+    "pyinstaller>=6.14.2",
+    "pytest>=8.4.1",
+    "pytest-cov>=6.2.1",
+    "pytest-mock>=3.14.1",
+    "ruff>=0.12.3",
+]

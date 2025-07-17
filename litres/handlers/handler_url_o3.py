@@ -1,9 +1,9 @@
 from litres.commands.extract_o3_book import ExtractO3BookCommand
 from litres.config import app_settings, logger
+from litres.engines.o3.pdf_engine import IMG2PDFEngine
+from litres.handlers.base import BaseUrlHandler
 from litres.loaders.pdf_loader import ImgLoaderCommand
 from litres.models.book import BookRequest
-from litres.engines.img_2_pdf import IMG2PDFEngine
-from litres.handlers.base import BaseUrlHandler
 
 
 class HandlerUrlO3(BaseUrlHandler):
