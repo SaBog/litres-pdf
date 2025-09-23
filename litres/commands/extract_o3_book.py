@@ -35,10 +35,10 @@ class ExtractO3BookCommand:
         parsed_url = urlparse(url)
         query_params = parse_qs(parsed_url.query)
 
-        if 'file' in query_params:
-            return query_params['file'][0]
-        elif 'art' in query_params:
-            return query_params['art'][0]
+        if "file" in query_params:
+            return query_params["file"][0]
+        elif "art" in query_params:
+            return query_params["art"][0]
 
         # This is a more specific match for book URLs like /book/author/title-12345/
         path_match = re.search(r"/book/.*-(\d+)/?$", parsed_url.path)
@@ -58,8 +58,9 @@ class ExtractO3BookCommand:
         return None
 
     def _extract_o3_book_data(self, response_text: str) -> PdfBook:
-        """Parse book data from LitRes custom response (JSON or JS-wrapped)."""
+        """Extracts and parses book data from the custom JS object response."""
         try:
+            # Extract file_id
             file_id_match = re.search(r"\[(\d+)\]", response_text)
             if not file_id_match:
                 logger.error(
@@ -69,49 +70,74 @@ class ExtractO3BookCommand:
                 raise BookProcessingError("Could not find file_id in response")
             file_id = file_id_match.group(1)
 
-            data = json.loads(re.sub(r"^[^{]*", "", response_text))
-            meta_data, pages_data = data.get("Meta"), data.get("pages")
-
-            if not (meta_data and pages_data):
-                logger.warning(
-                    "Meta or pages missing, using defaults",
+            # Extract the main object content between the curly braces
+            main_object_match = re.search(
+                r"= \s*(\{.*\})\s*;?\s*$", response_text, re.DOTALL
+            )
+            if not main_object_match:
+                logger.error(
+                    "Could not find main object in response",
                     extra={"raw_response": response_text},
                 )
-                book_meta = BookMeta(
-                    authors=[], title=f"Unknown_{file_id}", version=0.0, uuid=file_id
+                raise BookProcessingError("Could not find main object in response")
+
+            object_content = main_object_match.group(1)
+
+            # Normalize the object to valid JSON
+            # Replace unquoted keys with quoted keys (but avoid already quoted ones)
+            normalized_content = re.sub(
+                r'\b(\w+)(?=\s*:)(?!["\'])', r'"\1"', object_content
+            )
+            # Replace single quotes with double quotes for string values
+            normalized_content = re.sub(r"'([^']*)'", r'"\1"', normalized_content)
+
+            # Parse the normalized JSON
+            data = json.loads(normalized_content)
+            meta_data = data.get("Meta", {})
+
+            # Extract authors
+            authors_data = meta_data.get("Authors", [])
+            authors = [
+                Author(
+                    first=author.get("First", ""),
+                    middle=author.get("Middle", ""),
+                    last=author.get("Last", ""),
                 )
-                pages = []
-            else:
-                authors = [
-                    Author(
-                        first=author.get("First", ""),
-                        middle=author.get("Middle"),
-                        last=author.get("Last"),
-                    )
-                    for author in meta_data.get("Authors", [])
-                ]
-                book_meta = BookMeta(
-                    authors=authors,
-                    title=meta_data.get("Title", f"Unknown_{file_id}"),
-                    version=float(meta_data.get("version") or 0.0),
-                    uuid=meta_data.get("UUID", file_id),
-                )
-                pages = [
-                    Page(
-                        width=int(p.get("w", 0)),
-                        height=int(p.get("h", 0)),
-                        extension=p.get("ext", "jpg"),
-                    )
-                    for page in pages_data
-                    for p in page.get("p", [])
-                ]
+                for author in authors_data
+                if isinstance(author, dict)
+            ]
+
+            # Create BookMeta object
+            book_meta = BookMeta(
+                authors=authors,
+                title=meta_data.get("Title", f"Unknown_{file_id}"),
+                version=float(meta_data.get("version") or 0.0),
+                uuid=meta_data.get("UUID", file_id),
+            )
+
+            # Extract pages information
+            pages = []
+            pages_data = data.get("pages", [])
+            if pages_data and isinstance(pages_data, list) and len(pages_data) > 0:
+                page_info = pages_data[0]  # First (and usually only) page group
+                page_objects = page_info.get("p", [])
+
+                for page_obj in page_objects:
+                    if isinstance(page_obj, dict):
+                        pages.append(
+                            Page(
+                                width=int(page_obj.get("w", 0)),
+                                height=int(page_obj.get("h", 0)),
+                                extension=page_obj.get("ext", ""),
+                            )
+                        )
 
             return PdfBook(file_id=file_id, meta=book_meta, parts=pages)
 
-        except Exception as e:
+        except (KeyError, TypeError, json.JSONDecodeError) as e:
             logger.error(
                 f"Failed to parse book data: {e}",
                 exc_info=True,
                 extra={"raw_response": response_text},
             )
-            raise BookProcessingError(f"Failed to parse book data: {e}") 
+            raise BookProcessingError(f"Failed to parse book data: {e}")
