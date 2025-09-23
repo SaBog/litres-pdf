@@ -17,6 +17,7 @@ class AppSettings(BaseSettings):
     dpi: int = 300
     source_dir: str = 'books-source'
     books_dir: str = 'books'
+    log_file_name: str = "litres.log"
 
     out_format_priority: List[OutFormat] = [OutFormat.PDF, OutFormat.FB2, OutFormat.MP3]
 
