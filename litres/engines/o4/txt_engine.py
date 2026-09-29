@@ -1,9 +1,11 @@
 from litres.config import logger
-from litres.engines.base import Engine, OutFormat
-from litres.models.output_path_handler import OutputPathHandler
+from litres.engines.base import Engine
+from litres.models.book import TextBook
+from litres.models.book_paths import BookPaths
+from litres.models.out_format import OutFormat
 
 
-class TXTEngine(Engine):
+class TXTEngine(Engine[TextBook]):
     SUPPORTED_OUT_FORMAT = OutFormat.TXT
 
     @staticmethod
@@ -18,15 +20,14 @@ class TXTEngine(Engine):
                 text = TXTEngine._extract_text(data["c"])
         return text.replace("\u00ad", "")
 
-    def execute(self, book, path: OutputPathHandler):
+    def execute(self, book: TextBook, path: BookPaths) -> None:
         # book.parts is expected to be the structure for text extraction
         results = []
         for text_block in book.parts:
             if "c" in text_block:
                 results.append(self._extract_text(text_block["c"]))
-        result_text = '\n'.join(results)
-        filename = path.output / (path.filename + '.txt')
-        with open(filename, 'w', encoding='utf-8', buffering=1024*1024) as outfile:
+        result_text = "\n".join(results)
+        filename = path.output / (path.filename + ".txt")
+        with open(filename, "w", encoding="utf-8", buffering=1024 * 1024) as outfile:
             outfile.write(result_text)
-        logger.info(f"Book text successfully saved to: {filename}") 
-        
+        logger.info(f"Book text successfully saved to: {filename}")

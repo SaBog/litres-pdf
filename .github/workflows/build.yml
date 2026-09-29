@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check
+
+      - name: Type check
+        run: uv run ty check
+
+      - name: Test
+        run: uv run pytest -q
+
+  build:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Build exe
+        run: uv run pyinstaller litres-pdf.spec --noconfirm
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path package/litres-pdf | Out-Null
+          Copy-Item dist/litres-pdf.exe package/litres-pdf/
+          Copy-Item -Recurse fonts package/litres-pdf/fonts
+          Copy-Item config.ini, README.md package/litres-pdf/
+          Compress-Archive -Path package/litres-pdf -DestinationPath litres-pdf-windows-x64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: litres-pdf-windows-x64
+          path: litres-pdf-windows-x64.zip
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: litres-pdf-windows-x64
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: litres-pdf-windows-x64.zip
+          generate_release_notes: true

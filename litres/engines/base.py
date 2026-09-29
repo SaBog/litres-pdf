@@ -1,27 +1,19 @@
-from abc import abstractmethod
-from enum import Enum
-from typing import List
+from abc import ABC, abstractmethod
+from typing import Generic, TypeVar
 
 from litres.models.book import Book
-from litres.models.output_path_handler import OutputPathHandler
+from litres.models.book_paths import BookPaths
+from litres.models.out_format import OutFormat
+
+BookT = TypeVar("BookT", bound=Book)
 
 
-class OutFormat(Enum):
-    TXT = "txt"
-    IMG = "img"
-    FB2 = "fb2"
-    PDF = "pdf"
-    MP3 = "mp3"
-
-
-class Engine:
+class Engine(ABC, Generic[BookT]):
     SUPPORTED_OUT_FORMAT: OutFormat
 
     @abstractmethod
-    def execute(self, book: Book, path: OutputPathHandler):
+    def execute(self, book: BookT, path: BookPaths) -> None:
         pass
 
-    def supports(self, out_formats: List[OutFormat]) -> bool:
-        if not any(fmt == self.SUPPORTED_OUT_FORMAT for fmt in out_formats):
-            return False
-        return True
+    def supports(self, out_format: OutFormat) -> bool:
+        return out_format == self.SUPPORTED_OUT_FORMAT

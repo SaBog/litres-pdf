@@ -1,61 +1,34 @@
 import json
 import re
-from urllib.parse import parse_qs, urlparse
 
 import requests
 
 from litres.config import logger
 from litres.exceptions import BookProcessingError
-from litres.models.book import Author, BookMeta, BookRequest, Page, PdfBook
+from litres.models.book import BookRequest, Page, PdfBook
+from litres.parsing import book_meta_from_dict
+from litres.utils import js_object_to_json
 
-o3_URL_TEMPLATE = "https://www.litres.ru/pages/get_pdf_js/?file={file_id}"
+O3_URL_TEMPLATE = "https://www.litres.ru/pages/get_pdf_js/?file={file_id}"
 
 
-class ExtractO3BookCommand:
+class O3Extractor:
     def __init__(self, session: requests.Session):
         self._session = session
 
     def get(self, bq: BookRequest) -> PdfBook:
         """Fetch and parse book metadata from LitRes using BookRequest."""
-        file_id = bq.file_id or self._extract_file_id(bq.url)
+        file_id = bq.file_id
         if not file_id:
-            raise BookProcessingError(f"Failed to extract file_id from URL: {bq.url}")
+            raise BookProcessingError(f"No file_id in request for: {bq.url}")
         try:
-            url = o3_URL_TEMPLATE.format(file_id=file_id)
+            url = O3_URL_TEMPLATE.format(file_id=file_id)
             response = self._session.get(url)
             response.raise_for_status()
             return self._extract_o3_book_data(response.text)
         except Exception as e:
-            logger.error(f"Metadata retrieval error: {str(e)}", exc_info=True)
-            raise BookProcessingError(f"Metadata retrieval error: {str(e)}")
-
-    def _extract_file_id(self, url: str):
-        """Извлечение ID книги из URL"""
-        # Пытаемся извлечь ID из параметров запроса
-        parsed_url = urlparse(url)
-        query_params = parse_qs(parsed_url.query)
-
-        if "file" in query_params:
-            return query_params["file"][0]
-        elif "art" in query_params:
-            return query_params["art"][0]
-
-        # This is a more specific match for book URLs like /book/author/title-12345/
-        path_match = re.search(r"/book/.*-(\d+)/?$", parsed_url.path)
-        if path_match:
-            return path_match.group(1)
-
-        # Пробуем извлечь ID из пути URL
-        match = re.search(r"reader/(?:or/)?(\d+)", url)
-        if match:
-            return match.group(1)
-
-        # Пробуем извлечь ID из короткой формы URL
-        match = re.search(r"litres\.ru/(\d+)/?", url)
-        if match:
-            return match.group(1)
-
-        return None
+            logger.error(f"Metadata retrieval error: {e!s}", exc_info=True)
+            raise BookProcessingError(f"Metadata retrieval error: {e!s}") from e
 
     def _extract_o3_book_data(self, response_text: str) -> PdfBook:
         """Extracts and parses book data from the custom JS object response."""
@@ -83,36 +56,14 @@ class ExtractO3BookCommand:
 
             object_content = main_object_match.group(1)
 
-            # Normalize the object to valid JSON
-            # Replace unquoted keys with quoted keys (but avoid already quoted ones)
-            normalized_content = re.sub(
-                r'\b(\w+)(?=\s*:)(?!["\'])', r'"\1"', object_content
-            )
-            # Replace single quotes with double quotes for string values
-            normalized_content = re.sub(r"'([^']*)'", r'"\1"', normalized_content)
+            normalized_content = js_object_to_json(object_content)
 
             # Parse the normalized JSON
             data = json.loads(normalized_content)
             meta_data = data.get("Meta", {})
 
-            # Extract authors
-            authors_data = meta_data.get("Authors", [])
-            authors = [
-                Author(
-                    first=author.get("First", ""),
-                    middle=author.get("Middle", ""),
-                    last=author.get("Last", ""),
-                )
-                for author in authors_data
-                if isinstance(author, dict)
-            ]
-
-            # Create BookMeta object
-            book_meta = BookMeta(
-                authors=authors,
-                title=meta_data.get("Title", f"Unknown_{file_id}"),
-                version=float(meta_data.get("version") or 0.0),
-                uuid=meta_data.get("UUID", file_id),
+            book_meta = book_meta_from_dict(
+                meta_data, default_title=f"Unknown_{file_id}", default_uuid=file_id
             )
 
             # Extract pages information
@@ -140,4 +91,4 @@ class ExtractO3BookCommand:
                 exc_info=True,
                 extra={"raw_response": response_text},
             )
-            raise BookProcessingError(f"Failed to parse book data: {e}")
+            raise BookProcessingError(f"Failed to parse book data: {e}") from e

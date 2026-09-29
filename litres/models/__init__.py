@@ -1,3 +1,29 @@
-from .book import Author, Book, BookMeta, Page, TextBook
+from .book import (
+    AudioBook,
+    AudioPart,
+    Author,
+    Book,
+    BookFormat,
+    BookMeta,
+    BookRequest,
+    Page,
+    PdfBook,
+    TextBook,
+    TextPart,
+)
+from .out_format import OutFormat
 
-__all__ = ["Author", "Book", "BookMeta", "Page", "TextBook"] 
+__all__ = [
+    "AudioBook",
+    "AudioPart",
+    "Author",
+    "Book",
+    "BookFormat",
+    "BookMeta",
+    "BookRequest",
+    "OutFormat",
+    "Page",
+    "PdfBook",
+    "TextBook",
+    "TextPart",
+]
