@@ -1,56 +1,37 @@
+from collections.abc import Mapping
 
-import re
-from typing import List
-
-import requests
-
-from litres.commands.book_request import BookRequestCommand
-from litres.config import app_settings
+from litres.book_request import BookRequestResolver
 from litres.exceptions import BookProcessingError
-from litres.handlers.base import BaseUrlHandler
-from litres.handlers.handler_url_audiobook import HandlerUrlAudiobook
-from litres.handlers.handler_url_o3 import HandlerUrlO3
-from litres.handlers.handler_url_o4 import HandlerUrlO4
-from litres.handlers.handler_url_o5 import HandlerUrlO5
-from litres.models.book import BookRequest
+from litres.handlers.book_handler import BookHandler
+from litres.models.book import BookFormat, BookRequest
+from litres.models.out_format import OutFormat
 
 
 class BookProcessor:
-    """Orchestrates the book processing workflow using BookPipeline subclasses."""
+    """Resolves a URL to a book format and runs the handler registered for it."""
 
-    def __init__(self, session: requests.Session):
-        self._session = session
+    def __init__(
+        self,
+        request_resolver: BookRequestResolver,
+        handlers: Mapping[BookFormat, BookHandler],
+        out_format_priority: list[OutFormat],
+    ):
+        self._request_resolver = request_resolver
+        self.handlers = handlers
+        self._out_format_priority = out_format_priority
 
-        self.handlers: List[BaseUrlHandler] = [
-            HandlerUrlO3(session), 
-            HandlerUrlO4(session), 
-            HandlerUrlO5(session),
-            HandlerUrlAudiobook(session),
-        ]
-
-    def _is_general_book_url(self, url: str) -> bool:
-        # Пример: https://www.litres.ru/book/author/book-title-12345/
-        return bool(re.match(r".*/book/.+-\d+/?$", url))
-
-    def _create_book_request(self, url: str) -> BookRequest:
-        if self._is_general_book_url(url):
-            return BookRequestCommand(self._session).create(url)
-
-        return BookRequest(url=url)
-
-    def _select_handler(self, bq: BookRequest) -> BaseUrlHandler:
-        for handler in self.handlers:
-            if handler.supports(bq):
-                return handler
-        
-        raise BookProcessingError(f"Unsupported URL format: {bq.url}")
+    def _select_handler(self, bq: BookRequest) -> BookHandler:
+        try:
+            return self.handlers[bq.format]
+        except KeyError:
+            raise BookProcessingError(
+                f"No handler for book format '{bq.format}': {bq.url}"
+            ) from None
 
     def process_book(self, url: str):
-        """
-        Process a single book URL through all stages using the appropriate pipeline.
-        """
-        book_req = self._create_book_request(url)
+        """Process a single book URL through all stages using the matching handler."""
+        book_req = self._request_resolver.resolve(url)
         handler = self._select_handler(book_req)
 
         handler.load(book_req)
-        handler.save(app_settings.out_format_priority)
+        handler.save(self._out_format_priority)

@@ -1,57 +1,82 @@
-# import pytest
-# from unittest.mock import MagicMock, patch
-# from litres.handlers.base import BaseUrlHandler
-# from litres.handlers.handler_url_o3 import HandlerUrlO3
-# from litres.handlers.handler_url_o4 import HandlerUrlO4
-# from litres.handlers.handler_url_o5 import HandlerUrlO5
-# from litres.models.book import BookRequest
-# from litres.engines.base import OutFormat, Engine
+from unittest.mock import MagicMock
 
-# class DummyEngine(Engine):
-#     SUPPORTED_OUT_FORMAT = OutFormat.PDF
-#     def execute(self, path):
-#         pass
+import pytest
 
-# def make_dummy_handler(session):
-#     class DummyHandler(BaseUrlHandler):
-#         engines = [DummyEngine()]
-#         def supports(self, bq: BookRequest) -> bool:
-#             return True
-#         def load(self, bq: BookRequest):
-#             return None
-#     return DummyHandler(session)
+from litres.engines.base import Engine
+from litres.exceptions import BookProcessingError
+from litres.handlers.book_handler import BookHandler
+from litres.models.book import Author, Book, BookFormat, BookMeta, BookRequest
+from litres.models.out_format import OutFormat
 
-# def test_base_url_handler_methods():
-#     session = MagicMock()
-#     handler = make_dummy_handler(session)
-#     bq = MagicMock()
-#     handler.book = MagicMock()  # Set required attribute
-#     assert handler.supports(bq) is True
-#     assert handler.load(bq) is None
-#     handler.save([OutFormat.PDF])
-#     assert isinstance(handler._select_engine([OutFormat.PDF]), DummyEngine)
 
-# @patch("litres.commands.extract_o3_book.ExtractO3BookCommand.get", return_value=MagicMock(meta=MagicMock(title="title"), parts=[1]))
-# @patch("litres.handlers.handler_url_o3.BaseUrlHandler.__init__", return_value=None)
-# def test_handler_url_o3(mock_base_init, mock_get):
-#     handler = HandlerUrlO3(MagicMock())
-#     handler._session = MagicMock()  # Set required attribute
-#     bq = MagicMock()
-#     assert handler.supports(bq) in [True, False]
-#     assert handler.load(bq) is None
+class FakeEngine(Engine[Book]):
+    def __init__(self, fmt: OutFormat):
+        self.SUPPORTED_OUT_FORMAT = fmt
+        self.executed_with: tuple | None = None
 
-# @patch("litres.commands.extract_o4_book.ExtractO4BookCommand.get", return_value=MagicMock(meta=MagicMock(title="title"), parts=[1]))
-# @patch("litres.handlers.handler_url_o4.BaseUrlHandler.__init__", return_value=None)
-# def test_handler_url_o4(mock_base_init, mock_get):
-#     handler = HandlerUrlO4(MagicMock())
-#     handler._session = MagicMock()  # Set required attribute
-#     bq = MagicMock()
-#     assert handler.supports(bq) in [True, False]
-#     assert handler.load(bq) is None
+    def execute(self, book, path):
+        self.executed_with = (book, path)
 
-# @patch("litres.handlers.handler_url_o5.BaseUrlHandler.__init__", return_value=None)
-# def test_handler_url_o5(mock_base_init):
-#     handler = HandlerUrlO5(MagicMock())
-#     bq = MagicMock()
-#     assert handler.supports(bq) is False
-#     assert handler.load(bq) is None 
+
+def make_book(title="My: Book") -> Book:
+    meta = BookMeta(authors=[Author(first="A")], title=title, version=1.0, uuid="u")
+    return Book(meta=meta, parts=[])
+
+
+def make_handler(tmp_path, engines, extractor=None, loader=None) -> BookHandler[Book]:
+    return BookHandler(
+        extractor or MagicMock(),
+        loader or MagicMock(),
+        engines,
+        tmp_path / "source",
+        tmp_path / "books",
+    )
+
+
+def test_load_extracts_then_downloads_into_sanitized_paths(tmp_path):
+    book = make_book("My: Book")
+    extractor, loader = MagicMock(), MagicMock()
+    extractor.get.return_value = book
+    handler = make_handler(tmp_path, [], extractor, loader)
+    bq = BookRequest(url="u", format=BookFormat.O3)
+
+    handler.load(bq)
+
+    extractor.get.assert_called_once_with(bq)
+    loader.download_parts.assert_called_once()
+    downloaded_book, paths = loader.download_parts.call_args.args
+    assert downloaded_book is book
+    assert paths.filename == "My_ Book"
+    assert paths.source == tmp_path / "source" / "My_ Book"
+    assert paths.output == tmp_path / "books"
+
+
+def test_save_uses_first_engine_matching_priority(tmp_path):
+    pdf, fb2 = FakeEngine(OutFormat.PDF), FakeEngine(OutFormat.FB2)
+    handler = make_handler(tmp_path, [pdf, fb2])
+    handler.book = make_book()
+
+    handler.save([OutFormat.FB2, OutFormat.PDF])
+
+    assert fb2.executed_with is not None
+    assert pdf.executed_with is None
+
+
+def test_save_without_matching_engine_raises(tmp_path):
+    handler = make_handler(tmp_path, [FakeEngine(OutFormat.PDF)])
+    handler.book = make_book()
+    with pytest.raises(BookProcessingError):
+        handler.save([OutFormat.MP3])
+
+
+def test_engine_failure_propagates_and_nothing_is_reported_as_saved(tmp_path, mocker):
+    engine = FakeEngine(OutFormat.PDF)
+    engine.execute = MagicMock(side_effect=BookProcessingError("boom"))
+    handler = make_handler(tmp_path, [engine])
+    handler.book = make_book()
+    log = mocker.patch("litres.handlers.book_handler.logger")
+
+    with pytest.raises(BookProcessingError):
+        handler.save([OutFormat.PDF])
+
+    assert not any("saved" in str(c) for c in log.info.call_args_list)

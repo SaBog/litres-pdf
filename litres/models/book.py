@@ -1,14 +1,24 @@
 from dataclasses import dataclass
-from typing import Any, List, Optional
+from enum import StrEnum
+from typing import Generic, NotRequired, TypedDict, TypeVar
+
+
+class BookFormat(StrEnum):
+    """LitRes viewer format a book is served in."""
+
+    O3 = "o3"  # page images
+    O4 = "o4"  # structured text
+    AUDIOBOOK = "audiobook"
 
 
 @dataclass
 class Author:
     """Класс для представления информации об авторе"""
+
     first: str
-    middle: Optional[str] = None
-    last: Optional[str] = None
-    
+    middle: str | None = None
+    last: str | None = None
+
     def full_name(self) -> str:
         """Возвращает полное имя автора"""
         parts = [self.first]
@@ -17,51 +27,77 @@ class Author:
         if self.last:
             parts.append(self.last)
         return " ".join(parts)
-    
+
     def __str__(self):
         return self.full_name()
+
 
 @dataclass
 class Page:
     """Класс для представления страницы книги"""
+
     width: int
     height: int
     extension: str
 
+
 @dataclass
 class BookMeta:
     """Класс для представления метаинформации о книге"""
-    authors: List[Author]
+
+    authors: list[Author]
     title: str
     version: float
     uuid: str
-    
+
+
+class TextPart(TypedDict):
+    """A chapter entry of a text book table of contents; LitRes adds more keys."""
+
+    url: str
+    c: NotRequired[list]
+
+
+class AudioPart(TypedDict):
+    filename: str
+    file_id: str
+    url: str
+
+
+PartT = TypeVar("PartT")
+
+
 @dataclass
-class Book:
+class Book(Generic[PartT]):
     meta: BookMeta
-    parts: List[Any]
-    
+    parts: list[PartT]
+
     @property
     def total_parts(self) -> int:
         return len(self.parts)
 
+
 @dataclass
-class PdfBook(Book):
+class PdfBook(Book[Page]):
     file_id: str
-    parts: List[Page]
 
 
 @dataclass
-class TextBook(Book):
+class TextBook(Book[TextPart]):
     base_url: str
 
+
 @dataclass
-class AudioBook(Book):
+class AudioBook(Book[AudioPart]):
     art_id: str
+
 
 @dataclass
 class BookRequest:
+    """What the user asked for, resolved to a format and the ids needed to fetch it."""
+
     url: str
-    file_id: Optional[str] = None
-    art_id: Optional[str] = None
-    base_url: Optional[str] = None
+    format: BookFormat
+    file_id: str | None = None
+    art_id: str | None = None
+    base_url: str | None = None

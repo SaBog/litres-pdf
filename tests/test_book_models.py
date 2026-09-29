@@ -1,5 +1,13 @@
-from litres.models.book import (Author, Book, BookMeta, BookRequest, Page,
-                                PdfBook, TextBook)
+from litres.models.book import (
+    Author,
+    Book,
+    BookFormat,
+    BookMeta,
+    BookRequest,
+    Page,
+    PdfBook,
+    TextBook,
+)
 
 
 def test_author_full_name():
@@ -11,29 +19,36 @@ def test_author_full_name():
     a3 = Author(first="Ivan")
     assert a3.full_name() == "Ivan"
 
+
 def test_page():
     p = Page(width=100, height=200, extension="jpg")
     assert p.width == 100
     assert p.height == 200
     assert p.extension == "jpg"
 
+
 def test_bookmeta():
-    meta = BookMeta(authors=[Author(first="A")], title="Title", version=1.0, uuid="uuid")
+    meta = BookMeta(
+        authors=[Author(first="A")], title="Title", version=1.0, uuid="uuid"
+    )
     assert meta.title == "Title"
     assert meta.uuid == "uuid"
     assert isinstance(meta.authors[0], Author)
 
+
 def test_book_total_parts():
     meta = BookMeta(authors=[], title="T", version=1.0, uuid="id")
-    b = Book(meta=meta, parts=[1,2,3])
+    b = Book(meta=meta, parts=[1, 2, 3])
     assert b.total_parts == 3
+
 
 def test_pdfbook_inherits_book():
     meta = BookMeta(authors=[], title="T", version=1.0, uuid="id")
-    b = PdfBook(meta=meta, file_id="fid", parts=[Page(1,2,"jpg")])
+    b = PdfBook(meta=meta, file_id="fid", parts=[Page(1, 2, "jpg")])
     assert isinstance(b, Book)
     assert b.file_id == "fid"
     assert isinstance(b.parts[0], Page)
+
 
 def test_textbook_inherits_book():
     meta = BookMeta(authors=[], title="T", version=1.0, uuid="id")
@@ -41,9 +56,29 @@ def test_textbook_inherits_book():
     assert isinstance(b, Book)
     assert b.base_url == "url"
 
+
 def test_bookrequest():
-    br = BookRequest(url="url", file_id="fid", art_id="aid", base_url="burl")
+    br = BookRequest(
+        url="url", format=BookFormat.O3, file_id="fid", art_id="aid", base_url="burl"
+    )
     assert br.url == "url"
+    assert br.format is BookFormat.O3
     assert br.file_id == "fid"
     assert br.art_id == "aid"
-    assert br.base_url == "burl" 
+    assert br.base_url == "burl"
+
+
+def test_book_format_compares_with_plain_strings():
+    from litres.models.book import BookFormat
+
+    assert BookFormat.O3 == "o3"
+    assert BookFormat("o4") is BookFormat.O4
+
+
+def test_engine_base_is_abstract():
+    import pytest
+
+    from litres.engines.base import Engine
+
+    with pytest.raises(TypeError):
+        Engine()  # ty: ignore[call-non-callable]

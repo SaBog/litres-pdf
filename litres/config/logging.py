@@ -1,7 +1,9 @@
 import logging
-import structlog
 import re
-from litres.config.settings import app_settings
+
+import structlog
+
+ANSI_ESCAPE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 
 class PlainFileFormatter(logging.Formatter):
@@ -11,11 +13,10 @@ class PlainFileFormatter(logging.Formatter):
         # Format the message
         message = super().format(record)
         # Remove ANSI escape codes
-        ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-        return ansi_escape.sub("", message)
+        return ANSI_ESCAPE.sub("", message)
 
 
-def setup_logging():
+def setup_logging(log_file_name: str | None = None):
     """Logging setup with clean output to file"""
 
     handlers = []
@@ -24,10 +25,10 @@ def setup_logging():
     console_handler = logging.StreamHandler()
     handlers.append(console_handler)
 
-    if app_settings.log_file_name:
+    if log_file_name:
         # File handler without colors
         file_handler = logging.FileHandler(
-            app_settings.log_file_name,
+            log_file_name,
             encoding="utf-8",
         )
         # Set formatter without colors for file
