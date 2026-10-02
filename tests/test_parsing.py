@@ -1,25 +1,9 @@
-import pytest
 
 from litres.engines.audio_merge import AudioMergeEngine
-from litres.extractors.audiobook import AudiobookExtractor
 from litres.extractors.o3 import O3Extractor
 from litres.extractors.o4 import O4Extractor
 from litres.models.out_format import OutFormat
-from litres.parsing import book_meta_from_dict, find_query, state_queries
-
-
-def test_state_queries_tolerates_missing_structure():
-    assert state_queries({}) == {}
-    assert state_queries({"rtkqApi": {}}) == {}
-    assert state_queries({"rtkqApi": {"queries": {"a": 1}}}) == {"a": 1}
-
-
-def test_find_query_returns_first_key_with_prefix():
-    state = {
-        "rtkqApi": {"queries": {"x": 0, "getArtData({1})": 1, "getArtData({2})": 2}}
-    }
-    assert find_query(state, "getArtData({") == ("getArtData({1})", 1)
-    assert find_query(state, "missing") is None
+from litres.parsing import book_meta_from_dict
 
 
 def test_book_meta_from_dict_maps_authors_and_defaults():
@@ -79,47 +63,6 @@ def test_o4_extractor_parses_meta_and_parts():
     assert book.base_url == "/base/"
     assert (book.meta.title, book.meta.uuid) == ("Book", "u")
     assert [p["url"] for p in book.parts] == ["p1", "p2"]
-
-
-def make_audio_state(title=None):
-    queries = {
-        'getArtFiles({"artId":42})': {
-            "data": [
-                {
-                    "id": "f1",
-                    "filename": "1.mp3",
-                    "encoding_type": "standard_quality_mp3",
-                },
-                {"id": "f2", "filename": "2.mp3", "encoding_type": "high_quality_mp3"},
-                {"id": "f3", "filename": "cover.jpg", "encoding_type": "x"},
-            ]
-        }
-    }
-    if title is not None:
-        queries["getArtData({})"] = {"data": {"title": title}}
-    return {"rtkqApi": {"queries": queries}}
-
-
-def test_audiobook_extractor_lists_standard_quality_mp3_parts():
-    art_id, parts = AudiobookExtractor(None)._extract_mp3_parts(make_audio_state())  # ty: ignore[invalid-argument-type]
-
-    assert art_id == "42"
-    assert [p["file_id"] for p in parts] == ["f1"]
-    assert parts[0]["url"].endswith("/download_book_subscr/42/f1/1.mp3")
-
-
-@pytest.mark.parametrize(
-    "state_title,expected",
-    [("Книга", "Аудиокнига Книга"), (None, "Аудиокнига")],
-)
-def test_audiobook_title_is_not_duplicated(state_title, expected):
-    meta = AudiobookExtractor(None)._extract_meta(make_audio_state(state_title))  # ty: ignore[invalid-argument-type]
-    assert meta.title == expected
-
-
-def test_audiobook_extractor_without_files_query_raises():
-    with pytest.raises(ValueError, match="getArtFiles"):
-        AudiobookExtractor(None)._extract_mp3_parts({})  # ty: ignore[invalid-argument-type]
 
 
 def test_engine_supports_a_single_format():

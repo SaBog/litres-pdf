@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Generic, NotRequired, TypedDict, TypeVar
 
@@ -8,6 +8,8 @@ class BookFormat(StrEnum):
 
     O3 = "o3"  # page images
     O4 = "o4"  # structured text
+    PDF_READER = "pdf_reader"  # page images via the signed-link API
+    TEXT_READER = "text_reader"  # text parts via the signed-link API
     AUDIOBOOK = "audiobook"
 
 
@@ -64,6 +66,14 @@ class AudioPart(TypedDict):
     url: str
 
 
+@dataclass
+class ExtraFile:
+    """An additional file of a book (bonus PDF, code archive) saved next to it."""
+
+    filename: str
+    url: str
+
+
 PartT = TypeVar("PartT")
 
 
@@ -71,6 +81,7 @@ PartT = TypeVar("PartT")
 class Book(Generic[PartT]):
     meta: BookMeta
     parts: list[PartT]
+    extras: list[ExtraFile] = field(default_factory=list, kw_only=True)
 
     @property
     def total_parts(self) -> int:
@@ -80,11 +91,15 @@ class Book(Generic[PartT]):
 @dataclass
 class PdfBook(Book[Page]):
     file_id: str
+    art_id: str | None = None
+    resolution: str | None = None  # e.g. 'w1900'; set by the reader flow only
 
 
 @dataclass
 class TextBook(Book[TextPart]):
     base_url: str
+    file_id: str | None = None  # set by the reader flow only
+    art_id: str | None = None
 
 
 @dataclass

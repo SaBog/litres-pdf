@@ -14,7 +14,7 @@ from litres.config import logger
 from litres.exceptions import BookProcessingError
 from litres.models.book import Book
 from litres.models.book_paths import BookPaths
-from litres.utils import timing
+from litres.utils import sanitize_filename, timing
 
 DEFAULT_RETRY_AFTER = 15
 
@@ -43,7 +43,7 @@ class RateLimiter:
             self._next_slot = max(self._next_slot, time.monotonic() + seconds)
 
 
-def _retry_after_seconds(response: requests.Response) -> float:
+def retry_after_seconds(response: requests.Response) -> float:
     try:
         return max(float(response.headers.get("Retry-After", DEFAULT_RETRY_AFTER)), 0)
     except (TypeError, ValueError):
@@ -120,6 +120,28 @@ class BaseLoader(ABC, Generic[T]):
 
         logger.info(f"Book successfully saved to: {path.source}")
 
+    def download_extras(self, book: T, path: BookPaths) -> None:
+        """Save the book's additional files next to the finished book."""
+        for extra in book.extras:
+            target = path.output / f"{path.filename} - {sanitize_filename(extra.filename)}"
+            if target.exists():
+                continue
+            try:
+                response = self._fetch_with_retry(extra.url)
+                self._ensure_not_a_page(response)
+                self._save_response(response, target)
+                logger.info(f"Saved additional file: {target.name}")
+            except Exception as e:
+                logger.warning(f"Failed to download {extra.filename}: {e!s}")
+
+    @staticmethod
+    def _ensure_not_a_page(response: requests.Response) -> None:
+        """A login or error page served with a 200 is not the file we asked for."""
+        content_type = response.headers.get("Content-Type", "")
+        if content_type.startswith("text/"):
+            response.close()
+            raise BookProcessingError(f"Expected a file, got {content_type}")
+
     @abstractmethod
     def _download_part(self, part_num: int, book: T, source_dir: Path) -> bool:
         """Download one part into source_dir; return True on success."""
@@ -159,7 +181,7 @@ class BaseLoader(ABC, Generic[T]):
             except requests.exceptions.HTTPError as e:
                 if e.response.status_code != 429:
                     raise
-                retry_after = _retry_after_seconds(e.response)
+                retry_after = retry_after_seconds(e.response)
                 self._rate_limiter.penalize(retry_after)
                 logger.warning(f"429 Too Many Requests: pausing {retry_after} seconds")
             except requests.exceptions.RequestException as e:

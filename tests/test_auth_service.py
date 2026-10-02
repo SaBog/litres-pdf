@@ -36,6 +36,16 @@ def test_create_session_sets_default_headers():
     assert headers["accept"] == "*/*"
 
 
+def test_sessions_retry_dropped_connections_and_gateway_errors():
+    retry = create_session().get_adapter("https://api.litres.ru").max_retries
+
+    assert retry.total == 3
+    assert set(retry.status_forcelist) == {502, 503, 504}
+    assert 429 not in retry.status_forcelist  # the loaders pause all workers instead
+    assert retry.allowed_methods is not None
+    assert "POST" not in retry.allowed_methods
+
+
 def test_valid_saved_cookie_authenticates_without_browser():
     auth, _, login, session = make_service(stored=[SID])
 
