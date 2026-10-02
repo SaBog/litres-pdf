@@ -15,14 +15,19 @@ from litres.engines.o4.txt_engine import TXTEngine
 from litres.extractors.audiobook import AudiobookExtractor
 from litres.extractors.o3 import O3Extractor
 from litres.extractors.o4 import O4Extractor
+from litres.extractors.reader_pdf import ReaderPdfExtractor
+from litres.extractors.reader_text import ReaderTextExtractor
 from litres.handlers.book_handler import BookHandler
 from litres.loaders.audio_loader import AudioLoader
 from litres.loaders.page_loader import PageImageLoader
+from litres.loaders.reader_page_loader import ReaderPageLoader
+from litres.loaders.reader_text_loader import ReaderTextLoader
 from litres.loaders.text_loader import TextLoader
 from litres.models.book import AudioBook, BookFormat, PdfBook, TextBook
 from litres.services.auth_service import AuthService
 from litres.services.browser_login import BrowserLogin
 from litres.services.cookie_store import CookieStore
+from litres.services.litres_api import LitresApi
 
 
 def build_auth_service(settings: AppSettings) -> AuthService:
@@ -35,12 +40,27 @@ def build_book_processor(
     source_dir = Path(settings.source_dir)
     books_dir = Path(settings.books_dir)
     delay, max_workers = settings.delay, settings.max_workers
+    api = LitresApi(session)
 
     handlers = {
         BookFormat.O3: BookHandler[PdfBook](
             O3Extractor(session),
             PageImageLoader(session, delay, max_workers),
             [IMG2PDFEngine(quality=settings.quality, dpi=settings.dpi)],
+            source_dir,
+            books_dir,
+        ),
+        BookFormat.PDF_READER: BookHandler[PdfBook](
+            ReaderPdfExtractor(api),
+            ReaderPageLoader(api, delay, max_workers),
+            [IMG2PDFEngine(quality=settings.quality, dpi=settings.dpi)],
+            source_dir,
+            books_dir,
+        ),
+        BookFormat.TEXT_READER: BookHandler[TextBook](
+            ReaderTextExtractor(api),
+            ReaderTextLoader(api, delay, max_workers),
+            [PDFEngine(), FB2Engine(), TXTEngine()],
             source_dir,
             books_dir,
         ),
@@ -52,7 +72,7 @@ def build_book_processor(
             books_dir,
         ),
         BookFormat.AUDIOBOOK: BookHandler[AudioBook](
-            AudiobookExtractor(session),
+            AudiobookExtractor(api),
             AudioLoader(session, delay, max_workers),
             [AudioMergeEngine()],
             source_dir,
@@ -60,5 +80,5 @@ def build_book_processor(
         ),
     }
     return BookProcessor(
-        BookRequestResolver(session), handlers, settings.out_format_priority
+        BookRequestResolver(session, api), handlers, settings.out_format_priority
     )

@@ -1,4 +1,6 @@
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from ..config import logger
 from ..constants import DOMAIN
@@ -11,9 +13,22 @@ USER_AGENT = (
 )
 
 
+# Dropped TLS handshakes and 5xx gateway errors happen now and then; 429 is
+# handled by the loaders, which know how to pause every worker.
+RETRY = Retry(
+    total=3,
+    backoff_factor=0.5,
+    status_forcelist=(502, 503, 504),
+    allowed_methods=("GET", "HEAD"),
+)
+
+
 def create_session() -> requests.Session:
-    """Creates a new requests session with default headers."""
+    """Creates a new requests session with default headers and connection retries."""
     session = requests.Session()
+    adapter = HTTPAdapter(max_retries=RETRY)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
     session.headers.update(
         {"accept": "*/*", "user-agent": USER_AGENT, "referer": f"{DOMAIN}"}
     )

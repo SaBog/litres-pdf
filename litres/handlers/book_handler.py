@@ -25,6 +25,8 @@ class BookLoader(Protocol[BookT_contra]):
 
     def download_parts(self, book: BookT_contra, path: BookPaths) -> None: ...
 
+    def download_extras(self, book: BookT_contra, path: BookPaths) -> None: ...
+
 
 class BookHandler(Generic[BookT]):
     """Loads one kind of book and saves it with the first matching engine."""
@@ -59,6 +61,7 @@ class BookHandler(Generic[BookT]):
         paths = self._paths_for_book()
         paths.makedirs()
         self._loader.download_parts(self.book, paths)
+        self._loader.download_extras(self.book, paths)
 
     def save(self, out_format_priority: list[OutFormat]) -> None:
         engine = self._select_engine(out_format_priority)

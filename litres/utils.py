@@ -24,29 +24,6 @@ def sanitize_filename(name):
     return re.sub(r'[<>:"/\\|?*]', "_", str(name)).strip()[:100]
 
 
-def extract_initial_state(html: str):
-    """
-    Extracts the 'initialState' JSON object from the given HTML string.
-    Handles Russian and other Unicode characters correctly.
-    """
-    # Non-greedy match for the initialState value
-    match = re.search(r'"initialState":"(.*?)"},"__N_SSP', html, re.DOTALL)
-    if not match:
-        raise ValueError("initialState not found in HTML")
-
-    state_str_escaped = match.group(1)
-
-    try:
-        # First unescape the JSON string (handles \", \\, \/, \b, \f, \n, \r, \t, \uXXXX)
-        state_str = json.loads(f'"{state_str_escaped}"')
-        # Then parse the actual JSON
-        state_json = json.loads(state_str)
-    except Exception as e:
-        raise ValueError(f"Failed to decode or parse initialState: {e}")
-
-    return state_json
-
-
 def load_and_parse_content(source_dir: Path) -> list[dict]:
     """Загрузка и парсинг контента из текстовых файлов"""
     content = []
@@ -138,11 +115,12 @@ def js_object_to_json(text: str) -> str:
     return "".join(out)
 
 
+def natural_key(name: str) -> tuple[int, int, str]:
+    """Sort key for file names: numeric stems by value (2 before 10), others by name."""
+    stem = Path(name).stem
+    return (0, int(stem), "") if stem.isdigit() else (1, 0, name)
+
+
 def natural_sorted(paths):
     """Sort paths so numeric stems go by value (2 before 10), others by name."""
-
-    def key(path: Path):
-        stem = path.stem
-        return (0, int(stem), "") if stem.isdigit() else (1, 0, path.name)
-
-    return sorted(paths, key=key)
+    return sorted(paths, key=lambda path: natural_key(path.name))

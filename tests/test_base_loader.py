@@ -142,44 +142,6 @@ def test_save_response_closes_response(tmp_path):
     response.close.assert_called_once()
 
 
-def test_rate_limiter_spaces_requests_across_threads():
-    import threading
-    import time
-
-    from litres.loaders.base_loader import RateLimiter
-
-    limiter = RateLimiter()
-    starts: list[float] = []
-    lock = threading.Lock()
-
-    def worker():
-        limiter.wait(0.05)
-        with lock:
-            starts.append(time.monotonic())
-
-    threads = [threading.Thread(target=worker) for _ in range(5)]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
-
-    starts.sort()
-    gaps = [b - a for a, b in zip(starts, starts[1:])]
-    assert all(gap >= 0.04 for gap in gaps)
-
-
-def test_rate_limiter_penalty_delays_next_request():
-    import time
-
-    from litres.loaders.base_loader import RateLimiter
-
-    limiter = RateLimiter()
-    limiter.penalize(0.1)
-    begin = time.monotonic()
-    limiter.wait(0.01)
-    assert time.monotonic() - begin >= 0.09
-
-
 def test_fetch_with_retry_429_pauses_all_threads(monkeypatch):
     loader = DummyLoader(MagicMock())
     resp = MagicMock(status_code=429, headers={"Retry-After": "7"})

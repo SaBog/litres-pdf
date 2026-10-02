@@ -30,17 +30,21 @@ class O4Extractor:
             ) from e
 
     def _extract_o4_book_data(self, text: str, base_url: str) -> TextBook:
-        try:
-            # The response is not valid JSON, it's a JS object. It needs to be cleaned up.
-            data = json.loads(js_object_to_json(text))
-            meta_data = data.get("Meta", {})
+        return parse_o4_toc(text, base_url)
 
-            return TextBook(
-                base_url=base_url,
-                meta=book_meta_from_dict(
-                    meta_data, default_title="Unknown", default_uuid=""
-                ),
-                parts=data.get("Parts", []),
-            )
-        except json.JSONDecodeError as e:
-            raise BookProcessingError(f"Text book metadata retrieval error: {e}") from e
+
+def parse_o4_toc(text: str, base_url: str) -> TextBook:
+    """Parse a toc.js body (a JS object, not valid JSON) into a TextBook."""
+    try:
+        data = json.loads(js_object_to_json(text))
+        meta_data = data.get("Meta", {})
+
+        return TextBook(
+            base_url=base_url,
+            meta=book_meta_from_dict(
+                meta_data, default_title="Unknown", default_uuid=""
+            ),
+            parts=data.get("Parts", []),
+        )
+    except json.JSONDecodeError as e:
+        raise BookProcessingError(f"Text book metadata retrieval error: {e}") from e

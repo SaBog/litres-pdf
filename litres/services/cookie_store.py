@@ -3,6 +3,8 @@ from pathlib import Path
 
 from ..config import logger
 
+SESSION_COOKIES = ("SID", "supersid")
+
 
 class CookieStore:
     """Persists the session cookie (SID) in a JSON file."""
@@ -26,18 +28,18 @@ class CookieStore:
             return []
 
     def save(self, cookies: list[dict]) -> bool:
-        """Store only the essential SID cookie. Returns whether it was saved."""
-        sid_cookie = next((c for c in cookies if c.get("name") == "SID"), None)
+        """Store the session cookies (SID, supersid). Returns whether it was saved."""
+        kept = [c for c in cookies if c.get("name") in SESSION_COOKIES]
 
-        if not sid_cookie:
+        if not any(c.get("name") == "SID" for c in kept):
             logger.warning("No SID cookie found to save.")
             return False
 
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)
             with self._path.open("w", encoding="utf-8") as f:
-                json.dump([sid_cookie], f, indent=2)
-            logger.info(f"SID cookie saved to {self._path}")
+                json.dump(kept, f, indent=2)
+            logger.info(f"Session cookies saved to {self._path}")
             return True
         except Exception as e:
             logger.error(f"Failed to save cookie file {self._path}: {e}")

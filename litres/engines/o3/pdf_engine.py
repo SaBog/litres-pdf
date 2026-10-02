@@ -8,6 +8,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from litres.config import logger
+from litres.constants import SUPPORTED_IMAGE_EXTENSIONS
 from litres.engines.base import Engine
 from litres.models.book import BookMeta, PdfBook
 from litres.models.book_paths import BookPaths
@@ -54,11 +55,11 @@ class IMG2PDFEngine(Engine[PdfBook]):
 
     def _get_images(self, input_folder: Path) -> list[Path]:
         """Get sorted list of image files in the input folder."""
-        image_files = sorted(
-            [f for f in input_folder.glob("*.jpg") if f.is_file()]
-            + [f for f in input_folder.glob("*.gif") if f.is_file()],
+        return sorted(
+            f
+            for f in input_folder.iterdir()
+            if f.is_file() and f.suffix.lower() in SUPPORTED_IMAGE_EXTENSIONS
         )
-        return image_files
 
     def _process_images(self, images: list[Path]) -> dict[Path, ProcessedImage]:
         """Обработка изображений с возвратом данных в памяти"""
